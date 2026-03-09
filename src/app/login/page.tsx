@@ -119,7 +119,7 @@ export default function LoginPage() {
                 marginBottom: 4,
               }}
             >
-              01 / USER_EMAIL
+              EMAIL
             </label>
             <input
               type="email"
@@ -160,7 +160,7 @@ export default function LoginPage() {
                 marginBottom: 4,
               }}
             >
-              02 / ACCESS_KEY
+              PASSWORD
             </label>
             <input
               type="password"
@@ -248,7 +248,7 @@ export default function LoginPage() {
               if (!loading) e.currentTarget.style.background = '#162744'
             }}
             onMouseLeave={(e) => {
-              if (!loading) e.currentTarget.style.background = '#0D3B7A'
+              if (!loading) e.currentTarget.style.background = '#0D1B2E'
             }}
           >
             {loading ? 'EXECUTING...' : 'RUN LOGIN QUERY ▸'}
