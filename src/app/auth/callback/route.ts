@@ -25,7 +25,20 @@ export async function GET(request: NextRequest) {
       }
     )
     await supabase.auth.exchangeCodeForSession(code)
+
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (session) {
+      const { data: tenantUser } = await supabase
+        .from('tenant_users')
+        .select('tenant_id, tenants(slug)')
+        .eq('user_id', session.user.id)
+        .single()
+
+      const slug = (tenantUser?.tenants as any)?.slug ?? 'taller'
+      return NextResponse.redirect(`${origin}/dashboard/${slug}`)
+    }
   }
 
-  return NextResponse.redirect(`${origin}/dashboard`)
+  return NextResponse.redirect(`${origin}/dashboard/taller`)
 }
