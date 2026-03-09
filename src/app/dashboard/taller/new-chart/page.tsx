@@ -1,99 +1,12 @@
-Build the Query Editor — the core of ArmandoAnalytics.
-This is a single page where you write SQL, run it, preview the chart, and save it to a dashboard.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ARCHITECTURE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- User writes raw SQL
-- Next.js API route executes SQL against the tenant's Supabase DB
-- Results return as JSON
-- ECharts renders the data
-- User saves the chart to a dashboard (stored in charts table)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 1 — API Route: execute SQL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Create app/api/query/route.ts:
-
-import { createClient } from '@supabase/supabase-js'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextRequest, NextResponse } from 'next/server'
-
-export async function POST(req: NextRequest) {
-  const { sql, tenantSlug } = await req.json()
-
-  if (!sql || !tenantSlug) {
-    return NextResponse.json({ error: 'Missing sql or tenantSlug' }, { status: 400 })
-  }
-
-  // Get tenant credentials from ArmandoAnalytics DB
-  const cookieStore = await cookies()
-  const aa = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
-        }
-      }
-    }
-  )
-
-  const { data: tenant } = await aa
-    .from('tenants')
-    .select('db_url, db_anon_key')
-    .eq('slug', tenantSlug)
-    .single()
-
-  if (!tenant?.db_url || !tenant?.db_anon_key) {
-    return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
-  }
-
-  // Execute SQL against tenant DB using rpc
-  const tenantDb = createClient(tenant.db_url, tenant.db_anon_key)
-  const { data, error } = await tenantDb.rpc('execute_query', { query: sql })
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 })
-  }
-
-  return NextResponse.json({ data })
-}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 2 — SQL function in Taller Rafa Supabase
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Run this in Supabase SQL Editor of the TALLER RAFA project:
-
-CREATE OR REPLACE FUNCTION execute_query(query TEXT)
-RETURNS JSON AS $$
-DECLARE
-  result JSON;
-BEGIN
-  EXECUTE 'SELECT json_agg(t) FROM (' || query || ') t' INTO result;
-  RETURN COALESCE(result, '[]'::json);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 3 — Query Editor page
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Create app/dashboard/taller/new-chart/page.tsx:
-
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import ReactECharts from 'echarts-for-react'
-import { createDashboard, createChart } from '@/app/actions/dashboards'
+import { getDashboards, createDashboard, createChart } from '@/app/actions/dashboards'
 
-const CHART_TYPES = ['line', 'bar', 'pie', 'kpi']
+const CHART_TYPES = ['line', 'bar', 'pie', 'kpi'] as const
 
-const DEFAULT_SQL = `SELECT 
+const DEFAULT_SQL = `SELECT
   DATE_TRUNC('day', paid_at)::date as fecha,
   SUM(total_client) as total
 FROM services
@@ -105,7 +18,7 @@ ORDER BY 1`
 export default function NewChartPage() {
   const router = useRouter()
   const [sql, setSql] = useState(DEFAULT_SQL)
-  const [chartType, setChartType] = useState('line')
+  const [chartType, setChartType] = useState<string>('line')
   const [title, setTitle] = useState('')
   const [results, setResults] = useState<any[]>([])
   const [columns, setColumns] = useState<string[]>([])
@@ -149,20 +62,16 @@ export default function NewChartPage() {
     if (!title || results.length === 0) return
     setSaving(true)
     try {
-      // Get or create default dashboard
-      const { getDashboards, createDashboard: cd, createChart: cc } = await import('@/app/actions/dashboards')
-      
-      // For now use hardcoded user id — Phase 2 will get from session
       const userId = (await (await fetch('/api/me')).json()).id
 
       let dashboards = await getDashboards('taller')
       let dashboard = dashboards?.[0]
-      
+
       if (!dashboard) {
-        dashboard = await cd('taller', userId, 'Taller Mecánico Rafa')
+        dashboard = await createDashboard('taller', userId, 'Taller Mecánico Rafa')
       }
 
-      await cc(dashboard.id, 'taller', userId, {
+      await createChart(dashboard.id, 'taller', userId, {
         title,
         chart_type: chartType as any,
         query_config: { sql },
@@ -176,7 +85,7 @@ export default function NewChartPage() {
       })
 
       router.push('/dashboard/taller')
-    } catch(e: any) {
+    } catch (e: any) {
       setError(e.message)
     } finally {
       setSaving(false)
@@ -210,7 +119,7 @@ export default function NewChartPage() {
         data: yData,
         smooth: true,
         itemStyle: { color: '#0070F3' },
-        areaStyle: chartType === 'line' ? { 
+        areaStyle: chartType === 'line' ? {
           color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [
               { offset: 0, color: 'rgba(0,112,243,0.12)' },
@@ -230,7 +139,7 @@ export default function NewChartPage() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '900px', fontFamily: 'Inter, sans-serif' }}>
-      
+
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '16px', fontWeight: 600, color: '#111111', margin: 0 }}>
@@ -301,7 +210,7 @@ export default function NewChartPage() {
       {/* Results */}
       {results.length > 0 && (
         <div style={{ marginTop: '24px' }}>
-          
+
           {/* Chart type selector */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
             {CHART_TYPES.map(t => (
@@ -390,54 +299,3 @@ export default function NewChartPage() {
     </div>
   )
 }
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 4 — API route to get current user
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Create app/api/me/route.ts:
-
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
-
-export async function GET() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll(c) { c.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) }
-      }
-    }
-  )
-  const { data: { user } } = await supabase.auth.getUser()
-  return NextResponse.json({ id: user?.id, email: user?.email })
-}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 5 — Connect "+" button in topbar
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-In app/dashboard/layout.tsx:
-The "+" button should navigate to /dashboard/taller/new-chart
-onClick={() => router.push('/dashboard/taller/new-chart')}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-IMPORTANT: Run this SQL in TALLER RAFA Supabase first
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CREATE OR REPLACE FUNCTION execute_query(query TEXT)
-RETURNS JSON AS $$
-DECLARE
-  result JSON;
-BEGIN
-  EXECUTE 'SELECT json_agg(t) FROM (' || query || ') t' INTO result;
-  RETURN COALESCE(result, '[]'::json);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-VERIFY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-npm run build — zero errors
-Commit: git commit -m "feat: query editor — SQL → ECharts → save to dashboard"

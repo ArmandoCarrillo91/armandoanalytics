@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 const workspaceNames: Record<string, string> = {
   taller: 'Taller',
@@ -9,6 +9,7 @@ const workspaceNames: Record<string, string> = {
 
 export default function TopBar() {
   const pathname = usePathname()
+  const router = useRouter()
   const segments = pathname.split('/')
   const slug = segments[2] ?? ''
   const name = workspaceNames[slug] ?? slug
@@ -30,6 +31,7 @@ export default function TopBar() {
         {name}
       </span>
       <button
+        onClick={() => router.push(`/dashboard/${slug}/new-chart`)}
         style={{
           width: 28,
           height: 28,
