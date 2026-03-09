@@ -68,14 +68,14 @@ function buildWordmark(): string {
 // VARIANT DEFINITIONS
 // ─────────────────────────────────────
 const variants: { filename: string; svg: string }[] = [
-  // 1. Default — dark bg, subtle border, white A
+  // 1. Default — blue bg, white A
   {
     filename: "logo-icon-default.svg",
     svg: buildIcon({
       size: 52,
-      rectFill: tokens.bg,
-      rectStroke: tokens.border,
-      textFill: tokens.white,
+      rectFill: "#0070F3",
+      rectStroke: "#0070F3",
+      textFill: "#FFFFFF",
       fontSize: 30,
       rx: 13,
     }),
@@ -92,26 +92,26 @@ const variants: { filename: string; svg: string }[] = [
       rx: 13,
     }),
   },
-  // 3. Light — white bg, dark A
+  // 3. Light — blue bg, white A
   {
     filename: "logo-icon-light.svg",
     svg: buildIcon({
       size: 52,
-      rectFill: "#ffffff",
-      rectStroke: "rgba(0,0,0,0.08)",
-      textFill: "#080808",
+      rectFill: "#0070F3",
+      rectStroke: "#0070F3",
+      textFill: "#FFFFFF",
       fontSize: 30,
       rx: 13,
     }),
   },
-  // 4. Elevated — slightly elevated surface
+  // 4. Elevated — blue bg, white A
   {
     filename: "logo-icon-elevated.svg",
     svg: buildIcon({
       size: 52,
-      rectFill: tokens.surface,
-      rectStroke: tokens.border,
-      textFill: tokens.white,
+      rectFill: "#0070F3",
+      rectStroke: "#0070F3",
+      textFill: "#FFFFFF",
       fontSize: 30,
       rx: 13,
     }),
@@ -121,9 +121,9 @@ const variants: { filename: string; svg: string }[] = [
     filename: "logo-icon-navbar.svg",
     svg: buildIcon({
       size: 34,
-      rectFill: tokens.bg,
-      rectStroke: tokens.border,
-      textFill: tokens.white,
+      rectFill: "#0070F3",
+      rectStroke: "#0070F3",
+      textFill: "#FFFFFF",
       fontSize: 19,
       rx: 9,
     }),
@@ -133,9 +133,9 @@ const variants: { filename: string; svg: string }[] = [
     filename: "logo-icon-favicon.svg",
     svg: buildIcon({
       size: 32,
-      rectFill: tokens.bg,
-      rectStroke: tokens.border,
-      textFill: tokens.white,
+      rectFill: "#0070F3",
+      rectStroke: "#0070F3",
+      textFill: "#FFFFFF",
       fontSize: 18,
       rx: 8,
     }),
