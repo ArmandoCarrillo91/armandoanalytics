@@ -1,103 +1,152 @@
-Rewrite app/login/page.tsx and login.module.css completely from scratch.
-Simple, centered, responsive. No split panels. No decorative elements.
+Rewrite the entire dashboard layout and login with this design system.
+Source: the aa-logo-A.html file — same aesthetic, inverted for the system.
+
+DESIGN SYSTEM:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LOGIN = dark (as is)
+DASHBOARD SYSTEM = white (inverted)
+
+COLOR TOKENS — add to globals.css as CSS variables:
+
+/* Dark (login) */
+--bg: #080808;
+--surface: rgba(255,255,255,0.03);
+--border-dark: rgba(255,255,255,0.07);
+--text-primary: rgba(255,255,255,0.95);
+--text-secondary: rgba(255,255,255,0.40);
+--text-dim: rgba(255,255,255,0.18);
+
+/* Light (system) */
+--bg-light: #FFFFFF;
+--bg-canvas: #FAFAFA;
+--border-light: #EAEAEA;
+--text-black: #111111;
+--text-gray: #6B7280;
+--text-muted: #A1A1AA;
+--accent: #0070F3;
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FONT
+FONT — globals.css
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-import { Inter } from 'next/font/google'
-const inter = Inter({ subsets: ['latin'], weight: ['400','500','600','700','800'] })
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-LAYOUT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Full viewport, background: #FFFFFF
-- Single centered column
-- display: flex, align-items: center, justify-content: center, min-height: 100vh
+html, body {
+  margin: 0; padding: 0;
+  font-family: 'Inter', sans-serif;
+}
 
-FORM CONTAINER:
-- width: 100%, max-width: 380px
-- padding: 0 24px
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CONTENT — top to bottom
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. LOGO + NAME (centered, margin-bottom: 40px):
-   - <img src="/brand/logo-icon-default.svg" width="40" height="40" />
-     display: block, margin: 0 auto 12px
-   - "ARMANDOANALYTICS"
-     Inter 14px 700, color #0D1117, letter-spacing 2px
-     text-align: center
-
-2. FIELDS:
-
-   EMAIL:
-   - label: "Email" — Inter 12px 500, color #64748B, margin-bottom 6px
-   - input: type email
-     width 100%, padding 12px 0
-     background transparent, border none
-     border-bottom: 1px solid #E2E8F0
-     Inter 14px, color #0D1117
-     placeholder: "correo@empresa.com", color #CBD5E1
-     focus: border-bottom-color #0070F3, outline none
-     margin-bottom: 24px
-
-   PASSWORD:
-   - label: "Contraseña" — same style as Email
-   - input: type password
-     same style as email input
-     placeholder: "••••••••"
-
-3. ERROR (hidden by default):
-   margin-top: 12px, margin-bottom: 12px
-   Inter 12px, color #EF4444
-   text: "Credenciales incorrectas. Intenta de nuevo."
-
-4. BUTTON (margin-top: 32px):
-   width: 100%, height: 48px
-   background: #0070F3, color white, border: none
-   border-radius: 6px
-   Inter 14px 600
-   text: "Iniciar sesión"
-   hover: background #0056CC, transition 0.2s
-   loading: "Iniciando..." + disabled + opacity 0.6
-   cursor: pointer
-
-5. FOOTER (margin-top: 48px, text-align: center):
-   "Sistema de uso interno. Acceso por invitación."
-   Inter 11px, color #94A3B8
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-AUTH LOGIC
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-
-const [email, setEmail] = useState('')
-const [password, setPassword] = useState('')
-const [loading, setLoading] = useState(false)
-const [error, setError] = useState(false)
-
-async function handleLogin() {
-  setLoading(true)
-  setError(false)
-  const supabase = createClient()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) {
-    setError(true)
-    setLoading(false)
-    return
-  }
-  router.push('/dashboard')
+.dot-grid {
+  background-image: radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RULES
+LOGIN PAGE — app/login/page.tsx
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- NO split panels, NO dark background, NO blue left side
-- NO "ACCESS SYSTEM", NO "EXECUTE", NO terminal language
-- ONE logo only — inside the form, centered above fields
-- CSS Modules only, delete and rewrite login.module.css
-- Responsive: works on mobile and desktop
-- npm run build — zero errors
+Keep current structure. Update colors only:
+
+background: #080808
+Card: no card — centered form on dark background
+
+Logo SVG (inline, centered, margin-bottom 24px):
+<svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+  <rect x=".5" y=".5" width="51" height="51" rx="13" 
+    stroke="rgba(255,255,255,0.08)" fill="rgba(255,255,255,0.03)"/>
+  <text x="26" y="26" text-anchor="middle" dominant-baseline="central"
+    font-size="30" font-weight="800" fill="rgba(255,255,255,0.95)"
+    font-family="Inter, sans-serif">A</text>
+</svg>
+
+Brand name: "armandoanalytics" — Inter 18px 700, 
+  color rgba(255,255,255,0.95), letter-spacing -0.5px, text-align center
+
+Labels: rgba(255,255,255,0.40), 11px, letter-spacing 1px
+Inputs: 
+  background: rgba(255,255,255,0.04)
+  border: 1px solid rgba(255,255,255,0.08)
+  border-radius: 8px
+  padding: 11px 14px
+  color: rgba(255,255,255,0.95)
+  font-size: 13px
+  focus: border-color rgba(255,255,255,0.25)
+  
+Button "Sign in":
+  background: rgba(255,255,255,0.95)
+  color: #000000
+  border-radius: 8px
+  height: 44px
+  font-size: 13px, font-weight: 700
+  hover: opacity 0.85
+
+Footer "Internal system · Access by invitation only.":
+  color: rgba(255,255,255,0.18), font-size: 11px, text-align center
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DASHBOARD LAYOUT — app/dashboard/layout.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Full white system — inverted from login.
+
+SIDEBAR (220px):
+  background: #FFFFFF
+  border-right: 1px solid #EAEAEA
+
+  Logo section (padding 16px):
+    SVG icon (28px):
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="7" fill="#0070F3"/>
+        <text x="14" y="14" text-anchor="middle" dominant-baseline="central"
+          font-size="16" font-weight="800" fill="white"
+          font-family="Inter, sans-serif">A</text>
+      </svg>
+    Brand: "armandoanalytics" — Inter 13px 500, #111111, letter-spacing -0.3px
+
+  Nav section:
+    Label "WORKSPACES" — 10px 500, #A1A1AA, letter-spacing 1.5px, uppercase
+    padding: 0 16px, margin-bottom 6px
+
+    Nav items:
+      padding: 8px 16px
+      font-size: 13px
+      Active: font-weight 500, color #111111, background #F4F4F5, 
+              border-left: 2px solid #0070F3
+      Inactive: font-weight 400, color #6B7280, border-left: 2px solid transparent
+      Hover: background #F4F4F5
+
+  Footer (border-top 1px solid #EAEAEA, padding 12px 16px):
+    Initials circle: 28px, background #111111, white text, 10px 500, border-radius 50%
+    Email: 12px, #6B7280, truncate
+
+TOPBAR (48px):
+  background: #FFFFFF
+  border-bottom: 1px solid #EAEAEA
+  padding: 0 20px
+  Left: workspace name — Inter 14px 500, #111111
+  Right: "+" button — 28px, border 1px solid #EAEAEA, border-radius 6px, color #6B7280
+
+CANVAS:
+  background: #FAFAFA
+  className="dot-grid"
+  padding: 24px
+  overflow-y: auto
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DASHBOARD PAGE — app/dashboard/taller/page.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Empty for now:
+export default function TallerPage() {
+  return <div />
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CLEAN UP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Delete if they exist:
+- components/taller/TallerDashboard.tsx
+- components/taller/KPIStrip.tsx
+- components/taller/FlujoDiarioChart.tsx
+- components/taller/GastosCategoriaChart.tsx
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+npm run build — zero errors

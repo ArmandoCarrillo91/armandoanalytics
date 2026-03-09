@@ -2,8 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Dark (login) */
+  --bg: #080808;
+  --surface: rgba(255,255,255,0.03);
+  --border-dark: rgba(255,255,255,0.07);
+  --text-primary: rgba(255,255,255,0.95);
+  --text-secondary: rgba(255,255,255,0.40);
+  --text-dim: rgba(255,255,255,0.18);
+
+  /* Light (system) */
+  --bg-light: #FFFFFF;
+  --bg-canvas: #FAFAFA;
+  --border-light: #EAEAEA;
+  --text-black: #111111;
+  --text-gray: #6B7280;
+  --text-muted: #A1A1AA;
+  --accent: #0070F3;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+.dot-grid {
+  background-image: radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
 }

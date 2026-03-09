@@ -2,11 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Inter } from 'next/font/google'
 import { createClient } from '@/lib/supabase/client'
 import styles from './login.module.css'
-
-const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'] })
 
 export default function LoginPage() {
   const router = useRouter()
@@ -30,17 +27,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className={`${inter.className} ${styles.root}`}>
+    <div className={styles.root}>
       <div className={styles.container}>
         <div className={styles.logo}>
-          <img
-            className={styles.logoIcon}
-            src="/brand/logo-icon-default.svg"
-            width={40}
-            height={40}
-            alt=""
-          />
-          <span className={styles.logoText}>ARMANDOANALYTICS</span>
+          <svg className={styles.logoSvg} width="52" height="52" viewBox="0 0 52 52" fill="none">
+            <rect x=".5" y=".5" width="51" height="51" rx="13"
+              stroke="rgba(255,255,255,0.08)" fill="rgba(255,255,255,0.03)" />
+            <text x="26" y="26" textAnchor="middle" dominantBaseline="central"
+              fontSize="30" fontWeight="800" fill="rgba(255,255,255,0.95)"
+              fontFamily="Inter, sans-serif">A</text>
+          </svg>
+          <span className={styles.logoText}>armandoanalytics</span>
         </div>
 
         <form onSubmit={handleLogin}>
