@@ -95,12 +95,12 @@ export default function LoginPage() {
             style={{
               fontSize: 48,
               fontWeight: 800,
-              color: '#0D3B7A',
+              color: '#0D1B2E',
               letterSpacing: -1,
               margin: 0,
             }}
           >
-            EXECUTE LOGIN
+            LOGIN
           </h1>
         </div>
 
@@ -231,7 +231,7 @@ export default function LoginPage() {
             style={{
               marginTop: 40,
               width: '100%',
-              background: '#0D3B7A',
+              background: '#0D1B2E',
               color: '#FFFFFF',
               border: 'none',
               borderRadius: 4,
@@ -245,7 +245,7 @@ export default function LoginPage() {
               transition: 'background 0.2s ease',
             }}
             onMouseEnter={(e) => {
-              if (!loading) e.currentTarget.style.background = '#0a2f63'
+              if (!loading) e.currentTarget.style.background = '#162744'
             }}
             onMouseLeave={(e) => {
               if (!loading) e.currentTarget.style.background = '#0D3B7A'
