@@ -2,13 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { JetBrains_Mono } from 'next/font/google'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import { createClient } from '@/lib/supabase/client'
 
-const mono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-})
+const inter = Inter({ subsets: ['latin'] })
+const mono = JetBrains_Mono({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'] })
 
 export default function LoginPage() {
   const router = useRouter()
@@ -39,7 +37,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className={mono.className}
+      className={inter.className}
       style={{
         minHeight: '100vh',
         background: '#F5F5F5',
@@ -59,8 +57,18 @@ export default function LoginPage() {
           minHeight: '100vh',
         }}
       >
-        {/* TOP-LEFT LOGO ROW */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {/* LOGO ROW — centered */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            marginTop: 48,
+            marginBottom: 48,
+            textAlign: 'center',
+          }}
+        >
           <img
             src="/brand/logo-icon-default.svg"
             width={36}
@@ -68,6 +76,7 @@ export default function LoginPage() {
             alt="ArmandoAnalytics"
           />
           <span
+            className={mono.className}
             style={{
               fontSize: 13,
               fontWeight: 700,
@@ -82,34 +91,24 @@ export default function LoginPage() {
         {/* HEADLINE */}
         <div style={{ marginTop: 'auto', paddingTop: '25vh' }}>
           <h1
+            className={inter.className}
             style={{
               fontSize: 48,
               fontWeight: 800,
-              color: '#0D1117',
+              color: '#0D3B7A',
               letterSpacing: -1,
               margin: 0,
             }}
           >
             EXECUTE LOGIN
           </h1>
-          <p
-            style={{
-              fontSize: 11,
-              color: 'rgba(0,0,0,0.3)',
-              letterSpacing: 3,
-              textTransform: 'uppercase',
-              marginTop: 8,
-              margin: '8px 0 0 0',
-            }}
-          >
-            ACCESSING TERMINAL INTERFACE V2.04.1
-          </p>
         </div>
 
         {/* FORM */}
         <form onSubmit={handleLogin} style={{ marginTop: 48 }}>
           <div>
             <label
+              className={mono.className}
               style={{
                 fontSize: 10,
                 fontWeight: 600,
@@ -128,12 +127,12 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="user@armando.net"
               required
+              className={mono.className}
               style={{
                 background: 'transparent',
                 border: 'none',
                 borderBottom: '1px solid rgba(0,0,0,0.12)',
                 padding: '10px 0',
-                fontFamily: 'inherit',
                 fontSize: 14,
                 color: '#0D1117',
                 outline: 'none',
@@ -150,6 +149,7 @@ export default function LoginPage() {
 
           <div style={{ marginTop: 32 }}>
             <label
+              className={mono.className}
               style={{
                 fontSize: 10,
                 fontWeight: 600,
@@ -168,12 +168,12 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="• • • • • • • • • • •"
               required
+              className={mono.className}
               style={{
                 background: 'transparent',
                 border: 'none',
                 borderBottom: '1px solid rgba(0,0,0,0.12)',
                 padding: '10px 0',
-                fontFamily: 'inherit',
                 fontSize: 14,
                 color: '#0D1117',
                 outline: 'none',
@@ -188,18 +188,38 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* ERROR STATE */}
+          {/* ERROR STATE + RESET LINK (only after failed login) */}
           {error && (
-            <div
-              style={{
-                marginTop: 24,
-                fontSize: 10,
-                color: 'rgba(220,50,50,0.8)',
-                letterSpacing: 1,
-                fontFamily: 'inherit',
-              }}
-            >
-              ✕  CREDENCIALES INVÁLIDAS
+            <div style={{ marginTop: 24 }}>
+              <span
+                className={mono.className}
+                style={{
+                  fontSize: 10,
+                  color: 'rgba(220,50,50,0.8)',
+                  letterSpacing: 1,
+                }}
+              >
+                ✕  CREDENCIALES INVÁLIDAS
+              </span>
+              <button
+                type="button"
+                onClick={handleReset}
+                className={mono.className}
+                style={{
+                  marginTop: 8,
+                  background: 'none',
+                  border: 'none',
+                  fontSize: 10,
+                  color: 'rgba(0,0,0,0.25)',
+                  letterSpacing: 2,
+                  textTransform: 'uppercase',
+                  display: 'block',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
+                RESET ACCESS CREDENTIALS
+              </button>
             </div>
           )}
 
@@ -207,15 +227,15 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
+            className={mono.className}
             style={{
               marginTop: 40,
               width: '100%',
-              background: loading ? '#0D1117' : '#0D1117',
+              background: '#0D3B7A',
               color: '#FFFFFF',
               border: 'none',
               borderRadius: 4,
               height: 56,
-              fontFamily: 'inherit',
               fontSize: 13,
               fontWeight: 700,
               letterSpacing: 2,
@@ -225,80 +245,21 @@ export default function LoginPage() {
               transition: 'background 0.2s ease',
             }}
             onMouseEnter={(e) => {
-              if (!loading) e.currentTarget.style.background = '#0070F3'
+              if (!loading) e.currentTarget.style.background = '#0a2f63'
             }}
             onMouseLeave={(e) => {
-              if (!loading) e.currentTarget.style.background = '#0D1117'
+              if (!loading) e.currentTarget.style.background = '#0D3B7A'
             }}
           >
             {loading ? 'EXECUTING...' : 'RUN LOGIN QUERY ▸'}
           </button>
         </form>
 
-        {/* RESET LINK */}
-        <button
-          onClick={handleReset}
-          style={{
-            marginTop: 20,
-            background: 'none',
-            border: 'none',
-            fontSize: 10,
-            color: 'rgba(0,0,0,0.25)',
-            letterSpacing: 2,
-            textTransform: 'uppercase',
-            textAlign: 'center',
-            display: 'block',
-            width: '100%',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            padding: 0,
-          }}
-        >
-          RESET ACCESS CREDENTIALS
-        </button>
-
         {/* SPACER */}
         <div style={{ flex: 1 }} />
       </div>
 
-      {/* FOOTER — fixed bottom left */}
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 32,
-          left: 48,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-        }}
-      >
-        <div
-          style={{
-            width: 6,
-            height: 6,
-            background: '#22C55E',
-            borderRadius: '50%',
-            animation: 'pulse 2s infinite',
-          }}
-        />
-        <span
-          style={{
-            fontSize: 10,
-            color: 'rgba(0,0,0,0.2)',
-            letterSpacing: 1,
-            fontFamily: 'inherit',
-          }}
-        >
-          SYSTEM ACTIVE · V2.0.412-STABLE · NODE_01
-        </span>
-      </div>
-
-      {/* PULSE ANIMATION */}
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
         input::placeholder {
           color: rgba(0,0,0,0.2) !important;
         }
