@@ -6,7 +6,7 @@ import { Inter } from 'next/font/google'
 import { createClient } from '@/lib/supabase/client'
 import styles from './login.module.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'] })
 
 export default function LoginPage() {
   const router = useRouter()
@@ -31,72 +31,59 @@ export default function LoginPage() {
 
   return (
     <div className={`${inter.className} ${styles.root}`}>
-      {/* ─── LEFT PANEL ─── */}
-      <div className={styles.left}>
-        <div className={styles.leftLogo}>
-          <img src="/brand/logo-icon-default.svg" width={40} height={40} alt="" />
-          <span className={styles.leftLogoText}>ARMANDOANALYTICS</span>
+      <div className={styles.container}>
+        <div className={styles.logo}>
+          <img
+            className={styles.logoIcon}
+            src="/brand/logo-icon-default.svg"
+            width={40}
+            height={40}
+            alt=""
+          />
+          <span className={styles.logoText}>ARMANDOANALYTICS</span>
         </div>
 
-        <div className={styles.watermark}>A</div>
-
-        <div className={styles.leftFooter}>
-          <span className={styles.statusLine}>SYSTEM.STATUS: OPERATIONAL</span>
-          <span className={styles.statusLine}>DATA.STREAM: ENCRYPTED</span>
-          <span className={styles.statusLine}>NODE.ALPHA: CONNECTED</span>
-          <span className={styles.copyright}>© 2024 ARMANDO ANALYTICS SYSTEMS V4.0.2</span>
-        </div>
-      </div>
-
-      {/* ─── RIGHT PANEL ─── */}
-      <div className={styles.right}>
-        <div className={styles.formWrapper}>
-          <div className={styles.rightLogo}>
-            <img src="/brand/logo-icon-default.svg" width={36} height={36} alt="" />
-            <span className={styles.rightLogoText}>ARMANDOANALYTICS</span>
+        <form onSubmit={handleLogin}>
+          <div className={styles.fieldEmail}>
+            <label className={styles.label}>Email</label>
+            <input
+              className={styles.input}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="correo@empresa.com"
+              required
+            />
           </div>
 
-          <h1 className={styles.headline}>ACCESS SYSTEM</h1>
-          <div className={styles.underline} />
+          <div>
+            <label className={styles.label}>Password</label>
+            <input
+              className={styles.input}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+          </div>
 
-          <form onSubmit={handleLogin}>
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>EMAIL ADDRESS</label>
-              <input
-                className={styles.input}
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="USER@DOMAIN.SYS"
-                required
-              />
-            </div>
+          {error && (
+            <p className={styles.error}>Invalid credentials. Please try again.</p>
+          )}
 
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>SECURE KEY</label>
-              <input
-                className={styles.input}
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="• • • • • • • • • • •"
-                required
-              />
-            </div>
+          <button
+            className={styles.button}
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
+        </form>
 
-            {error && (
-              <p className={styles.errorMsg}>Invalid credentials. Try again.</p>
-            )}
-
-            <button
-              className={styles.button}
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? 'EXECUTING...' : 'EXECUTE →'}
-            </button>
-          </form>
-        </div>
+        <p className={styles.footer}>
+          Internal system · Access by invitation only.
+        </p>
       </div>
     </div>
   )
