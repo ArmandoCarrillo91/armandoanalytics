@@ -28,8 +28,9 @@ export interface Chart {
 }
 
 export interface QueryConfig {
-  table: string
-  select: string
+  sql?: string
+  table?: string
+  select?: string
   filters?: { column: string; operator: string; value: any }[]
   date_column?: string
   group_by?: string
@@ -46,6 +47,9 @@ export interface DisplayConfig {
   value_suffix?: string
   format?: 'percent' | 'currency' | 'number'
   currency?: 'MXN' | 'USD'
+  x_axis?: string
+  y_axis?: string
+  color?: string
 }
 
 export interface AuditEntry {

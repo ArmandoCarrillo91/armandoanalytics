@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import ReactECharts from 'echarts-for-react'
 import { getDashboards, createDashboard, createChart } from '@/app/actions/dashboards'
 
@@ -15,8 +16,11 @@ WHERE paid_at >= DATE_TRUNC('month', CURRENT_DATE)
 GROUP BY 1
 ORDER BY 1`
 
-export default function NewChartPage() {
+function NewChartContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const dashboardId = searchParams.get('d')
+
   const [sql, setSql] = useState(DEFAULT_SQL)
   const [chartType, setChartType] = useState<string>('line')
   const [title, setTitle] = useState('')
@@ -27,6 +31,10 @@ export default function NewChartPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+
+  const backUrl = dashboardId
+    ? `/dashboard/taller?d=${dashboardId}`
+    : '/dashboard/taller'
 
   async function runQuery() {
     setLoading(true)
@@ -62,16 +70,18 @@ export default function NewChartPage() {
     if (!title || results.length === 0) return
     setSaving(true)
     try {
-      const userId = (await (await fetch('/api/me')).json()).id
+      let targetDashboardId: string = dashboardId ?? ''
 
-      let dashboards = await getDashboards('taller')
-      let dashboard = dashboards?.[0]
-
-      if (!dashboard) {
-        dashboard = await createDashboard('taller', userId, 'Taller Mecánico Rafa')
+      if (!targetDashboardId) {
+        let dashboards = await getDashboards('taller')
+        let dashboard = dashboards?.[0]
+        if (!dashboard) {
+          dashboard = await createDashboard('taller', 'Taller Mecánico Rafa')
+        }
+        targetDashboardId = dashboard.id
       }
 
-      await createChart(dashboard.id, 'taller', userId, {
+      await createChart(targetDashboardId, 'taller', {
         title,
         chart_type: chartType as any,
         query_config: { sql },
@@ -84,7 +94,7 @@ export default function NewChartPage() {
         }
       })
 
-      router.push('/dashboard/taller')
+      router.push(`/dashboard/taller?d=${targetDashboardId}`)
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -282,7 +292,7 @@ export default function NewChartPage() {
               {saving ? 'Saving...' : 'Save to Dashboard →'}
             </button>
             <button
-              onClick={() => router.push('/dashboard/taller')}
+              onClick={() => router.push(backUrl)}
               style={{
                 padding: '8px 16px',
                 background: 'white', color: '#6B7280',
@@ -297,5 +307,19 @@ export default function NewChartPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function NewChartPage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ padding: '24px', fontFamily: 'Inter, sans-serif' }}>
+          <div style={{ height: 20, width: 160, background: '#F4F4F5', borderRadius: 6 }} />
+        </div>
+      }
+    >
+      <NewChartContent />
+    </Suspense>
   )
 }
