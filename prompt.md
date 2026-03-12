@@ -1,443 +1,65 @@
-Build the Query Editor — the core of ArmandoAnalytics.
-This is a single page where you write SQL, run it, preview the chart, and save it to a dashboard.
+Build the complete dashboard flow. Three states in one page.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ARCHITECTURE
+STEP 1 — Update app/dashboard/taller/page.tsx
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- User writes raw SQL
-- Next.js API route executes SQL against the tenant's Supabase DB
-- Results return as JSON
-- ECharts renders the data
-- User saves the chart to a dashboard (stored in charts table)
+This page has 3 states:
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 1 — API Route: execute SQL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Create app/api/query/route.ts:
+STATE A — No dashboards exist:
+  Centered empty state:
+  - Icon: simple grid icon (SVG, 32px, #A1A1AA)
+  - Title: "No dashboards yet" — Inter 15px 500, #111111
+  - Subtitle: "Create your first dashboard to start analyzing data"
+    Inter 13px, #6B7280
+  - Button "+ New Dashboard" — onClick opens inline input
 
-import { createClient } from '@supabase/supabase-js'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextRequest, NextResponse } from 'next/server'
+STATE B — Dashboards exist, none selected:
+  List of dashboard cards:
+  - Each card: border 1px solid #EAEAEA, border-radius 8px, padding 16px
+  - Dashboard name: Inter 14px 500, #111111
+  - Chart count: "X charts" — Inter 12px, #6B7280
+  - Created date: Inter 11px, #A1A1AA
+  - Full card clickable → goes to STATE C
+  - Top right: "+ New Dashboard" button
 
-export async function POST(req: NextRequest) {
-  const { sql, tenantSlug } = await req.json()
-
-  if (!sql || !tenantSlug) {
-    return NextResponse.json({ error: 'Missing sql or tenantSlug' }, { status: 400 })
-  }
-
-  // Get tenant credentials from ArmandoAnalytics DB
-  const cookieStore = await cookies()
-  const aa = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
-        }
-      }
-    }
-  )
-
-  const { data: tenant } = await aa
-    .from('tenants')
-    .select('db_url, db_anon_key')
-    .eq('slug', tenantSlug)
-    .single()
-
-  if (!tenant?.db_url || !tenant?.db_anon_key) {
-    return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
-  }
-
-  // Execute SQL against tenant DB using rpc
-  const tenantDb = createClient(tenant.db_url, tenant.db_anon_key)
-  const { data, error } = await tenantDb.rpc('execute_query', { query: sql })
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 })
-  }
-
-  return NextResponse.json({ data })
-}
+STATE C — Dashboard selected (charts view):
+  URL: /dashboard/taller?d={dashboard_id}
+  - Dashboard name as page title (below topbar)
+  - Grid of chart cards — 2 columns
+  - Each chart card: border 1px solid #EAEAEA, border-radius 8px
+    title, chart type badge, rendered ECharts preview
+  - Empty state per card: "No data" — #A1A1AA centered
+  - "+" button in topbar → /dashboard/taller/new-chart?d={dashboard_id}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 2 — SQL function in Taller Rafa Supabase
+STEP 2 — Create Dashboard inline
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Run this in Supabase SQL Editor of the TALLER RAFA project:
-
-CREATE OR REPLACE FUNCTION execute_query(query TEXT)
-RETURNS JSON AS $$
-DECLARE
-  result JSON;
-BEGIN
-  EXECUTE 'SELECT json_agg(t) FROM (' || query || ') t' INTO result;
-  RETURN COALESCE(result, '[]'::json);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+When user clicks "+ New Dashboard":
+- Show inline input field (no modal, no page change)
+- Placeholder: "Dashboard name..."
+- Press Enter or click "Create" to save
+- Calls createDashboard('taller', userId, name)
+- On success: navigate to STATE C with new dashboard
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 3 — Query Editor page
+STEP 3 — Update new-chart page
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Create app/dashboard/taller/new-chart/page.tsx:
-
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import ReactECharts from 'echarts-for-react'
-import { createDashboard, createChart } from '@/app/actions/dashboards'
-
-const CHART_TYPES = ['line', 'bar', 'pie', 'kpi']
-
-const DEFAULT_SQL = `SELECT 
-  DATE_TRUNC('day', paid_at)::date as fecha,
-  SUM(total_client) as total
-FROM services
-WHERE paid_at >= DATE_TRUNC('month', CURRENT_DATE)
-  AND paid_at IS NOT NULL
-GROUP BY 1
-ORDER BY 1`
-
-export default function NewChartPage() {
-  const router = useRouter()
-  const [sql, setSql] = useState(DEFAULT_SQL)
-  const [chartType, setChartType] = useState('line')
-  const [title, setTitle] = useState('')
-  const [results, setResults] = useState<any[]>([])
-  const [columns, setColumns] = useState<string[]>([])
-  const [xAxis, setXAxis] = useState('')
-  const [yAxis, setYAxis] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
-
-  async function runQuery() {
-    setLoading(true)
-    setError('')
-    setResults([])
-    try {
-      const res = await fetch('/api/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sql, tenantSlug: 'taller' })
-      })
-      const json = await res.json()
-      if (json.error) {
-        setError(json.error)
-        return
-      }
-      const data = json.data ?? []
-      setResults(data)
-      if (data.length > 0) {
-        const cols = Object.keys(data[0])
-        setColumns(cols)
-        setXAxis(cols[0])
-        setYAxis(cols[1] ?? cols[0])
-      }
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function saveChart() {
-    if (!title || results.length === 0) return
-    setSaving(true)
-    try {
-      // Get or create default dashboard
-      const { getDashboards, createDashboard: cd, createChart: cc } = await import('@/app/actions/dashboards')
-      
-      // For now use hardcoded user id — Phase 2 will get from session
-      const userId = (await (await fetch('/api/me')).json()).id
-
-      let dashboards = await getDashboards('taller')
-      let dashboard = dashboards?.[0]
-      
-      if (!dashboard) {
-        dashboard = await cd('taller', userId, 'Taller Mecánico Rafa')
-      }
-
-      await cc(dashboard.id, 'taller', userId, {
-        title,
-        chart_type: chartType as any,
-        query_config: { sql },
-        display_config: {
-          x_axis: xAxis,
-          y_axis: yAxis,
-          format: 'currency',
-          currency: 'MXN',
-          color: '#0070F3'
-        }
-      })
-
-      router.push('/dashboard/taller')
-    } catch(e: any) {
-      setError(e.message)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  function getEChartsOption() {
-    if (results.length === 0) return {}
-    if (chartType === 'kpi') return {}
-
-    const xData = results.map(r => r[xAxis])
-    const yData = results.map(r => r[yAxis])
-
-    return {
-      backgroundColor: 'transparent',
-      grid: { top: 20, right: 20, bottom: 40, left: 60 },
-      xAxis: {
-        type: 'category',
-        data: xData,
-        axisLine: { lineStyle: { color: '#EAEAEA' } },
-        axisLabel: { color: '#6B7280', fontSize: 11 }
-      },
-      yAxis: {
-        type: 'value',
-        axisLine: { show: false },
-        splitLine: { lineStyle: { color: '#F4F4F5' } },
-        axisLabel: { color: '#6B7280', fontSize: 11 }
-      },
-      series: [{
-        type: chartType,
-        data: yData,
-        smooth: true,
-        itemStyle: { color: '#0070F3' },
-        areaStyle: chartType === 'line' ? { 
-          color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(0,112,243,0.12)' },
-              { offset: 1, color: 'rgba(0,112,243,0)' }
-            ]
-          }
-        } : undefined
-      }],
-      tooltip: {
-        trigger: 'axis',
-        backgroundColor: '#FFFFFF',
-        borderColor: '#EAEAEA',
-        textStyle: { color: '#111111', fontSize: 12 }
-      }
-    }
-  }
-
-  return (
-    <div style={{ padding: '24px', maxWidth: '900px', fontFamily: 'Inter, sans-serif' }}>
-      
-      {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '16px', fontWeight: 600, color: '#111111', margin: 0 }}>
-          New Chart
-        </h1>
-        <p style={{ fontSize: '13px', color: '#6B7280', margin: '4px 0 0' }}>
-          Write SQL → Preview → Save to dashboard
-        </p>
-      </div>
-
-      {/* Title input */}
-      <div style={{ marginBottom: '16px' }}>
-        <input
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          placeholder="Chart title..."
-          style={{
-            width: '100%', padding: '8px 12px',
-            border: '1px solid #EAEAEA', borderRadius: '6px',
-            fontSize: '13px', color: '#111111', outline: 'none',
-            fontFamily: 'Inter, sans-serif'
-          }}
-        />
-      </div>
-
-      {/* SQL Editor */}
-      <div style={{ marginBottom: '12px' }}>
-        <textarea
-          value={sql}
-          onChange={e => setSql(e.target.value)}
-          rows={6}
-          style={{
-            width: '100%', padding: '12px',
-            border: '1px solid #EAEAEA', borderRadius: '6px',
-            fontSize: '12px', fontFamily: 'monospace',
-            color: '#111111', resize: 'vertical', outline: 'none',
-            lineHeight: 1.6
-          }}
-        />
-      </div>
-
-      {/* Run button */}
-      <button
-        onClick={runQuery}
-        disabled={loading}
-        style={{
-          padding: '8px 16px',
-          background: '#111111', color: 'white',
-          border: 'none', borderRadius: '6px',
-          fontSize: '13px', fontWeight: 500,
-          cursor: loading ? 'not-allowed' : 'pointer',
-          opacity: loading ? 0.6 : 1,
-          fontFamily: 'Inter, sans-serif'
-        }}
-      >
-        {loading ? 'Running...' : 'Run Query →'}
-      </button>
-
-      {/* Error */}
-      {error && (
-        <div style={{ marginTop: '12px', padding: '10px 12px',
-          background: '#FEF2F2', border: '1px solid #FECACA',
-          borderRadius: '6px', fontSize: '12px', color: '#DC2626' }}>
-          {error}
-        </div>
-      )}
-
-      {/* Results */}
-      {results.length > 0 && (
-        <div style={{ marginTop: '24px' }}>
-          
-          {/* Chart type selector */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-            {CHART_TYPES.map(t => (
-              <button
-                key={t}
-                onClick={() => setChartType(t)}
-                style={{
-                  padding: '6px 12px',
-                  border: `1px solid ${chartType === t ? '#0070F3' : '#EAEAEA'}`,
-                  borderRadius: '6px', fontSize: '12px',
-                  background: chartType === t ? '#EFF6FF' : 'white',
-                  color: chartType === t ? '#0070F3' : '#6B7280',
-                  cursor: 'pointer', fontFamily: 'Inter, sans-serif'
-                }}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-
-          {/* Axis selectors */}
-          {chartType !== 'kpi' && columns.length > 1 && (
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-              <select value={xAxis} onChange={e => setXAxis(e.target.value)}
-                style={{ padding: '6px 10px', border: '1px solid #EAEAEA',
-                  borderRadius: '6px', fontSize: '12px', color: '#111111' }}>
-                {columns.map(c => <option key={c} value={c}>{c} (X)</option>)}
-              </select>
-              <select value={yAxis} onChange={e => setYAxis(e.target.value)}
-                style={{ padding: '6px 10px', border: '1px solid #EAEAEA',
-                  borderRadius: '6px', fontSize: '12px', color: '#111111' }}>
-                {columns.map(c => <option key={c} value={c}>{c} (Y)</option>)}
-              </select>
-            </div>
-          )}
-
-          {/* Chart preview */}
-          {chartType === 'kpi' ? (
-            <div style={{ padding: '24px', border: '1px solid #EAEAEA',
-              borderRadius: '8px', textAlign: 'center' }}>
-              <div style={{ fontSize: '36px', fontWeight: 700, color: '#111111' }}>
-                {results[0]?.[yAxis] ?? results[0]?.[columns[0]]}
-              </div>
-              <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
-                {title || yAxis}
-              </div>
-            </div>
-          ) : (
-            <div style={{ border: '1px solid #EAEAEA', borderRadius: '8px', padding: '16px' }}>
-              <ReactECharts option={getEChartsOption()} style={{ height: '280px' }} />
-            </div>
-          )}
-
-          {/* Save button */}
-          <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
-            <button
-              onClick={saveChart}
-              disabled={saving || !title}
-              style={{
-                padding: '8px 16px',
-                background: '#0070F3', color: 'white',
-                border: 'none', borderRadius: '6px',
-                fontSize: '13px', fontWeight: 500,
-                cursor: saving || !title ? 'not-allowed' : 'pointer',
-                opacity: saving || !title ? 0.6 : 1,
-                fontFamily: 'Inter, sans-serif'
-              }}
-            >
-              {saving ? 'Saving...' : 'Save to Dashboard →'}
-            </button>
-            <button
-              onClick={() => router.push('/dashboard/taller')}
-              style={{
-                padding: '8px 16px',
-                background: 'white', color: '#6B7280',
-                border: '1px solid #EAEAEA', borderRadius: '6px',
-                fontSize: '13px', cursor: 'pointer',
-                fontFamily: 'Inter, sans-serif'
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+Update app/dashboard/taller/new-chart/page.tsx:
+- Read dashboard_id from URL searchParams: ?d={dashboard_id}
+- On save: use that dashboard_id instead of fetching first dashboard
+- On cancel: go back to /dashboard/taller?d={dashboard_id}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 4 — API route to get current user
+STEP 4 — Render saved charts
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Create app/api/me/route.ts:
-
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
-
-export async function GET() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll(c) { c.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) }
-      }
-    }
-  )
-  const { data: { user } } = await supabase.auth.getUser()
-  return NextResponse.json({ id: user?.id, email: user?.email })
-}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 5 — Connect "+" button in topbar
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-In app/dashboard/layout.tsx:
-The "+" button should navigate to /dashboard/taller/new-chart
-onClick={() => router.push('/dashboard/taller/new-chart')}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-IMPORTANT: Run this SQL in TALLER RAFA Supabase first
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CREATE OR REPLACE FUNCTION execute_query(query TEXT)
-RETURNS JSON AS $$
-DECLARE
-  result JSON;
-BEGIN
-  EXECUTE 'SELECT json_agg(t) FROM (' || query || ') t' INTO result;
-  RETURN COALESCE(result, '[]'::json);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+For each chart in STATE C:
+- Read chart.query_config.sql
+- Call /api/query with that SQL and tenantSlug: 'taller'
+- Render with ECharts using chart.display_config
+- Show loading skeleton while fetching
+- Show "Query error" in red if SQL fails
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 VERIFY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 npm run build — zero errors
-Commit: git commit -m "feat: query editor — SQL → ECharts → save to dashboard"
