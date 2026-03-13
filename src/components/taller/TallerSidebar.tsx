@@ -10,9 +10,6 @@ import SidebarPulsoShare from './SidebarPulsoShare'
 
 const NAV_ITEMS = [
   { label: 'Pulso', href: '/dashboard/taller/pulso', icon: '♡' },
-  { label: 'Operaciones', href: '/dashboard/taller/operaciones', icon: '◉' },
-  { label: 'Dinero', href: '/dashboard/taller/dinero', icon: '$' },
-  { label: 'Trabajo', href: '/dashboard/taller/trabajo', icon: '⚙' },
 ]
 
 export default function TallerSidebar({ onNavigate, otherTenants = [], isPlatformAdmin, userRole }: { onNavigate?: () => void; otherTenants?: { slug: string; name: string }[]; isPlatformAdmin?: boolean; userRole?: string | null }) {
