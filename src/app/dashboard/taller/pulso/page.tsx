@@ -7,6 +7,7 @@ import PulsoShareButton from '@/components/taller/PulsoShareButton'
 import PulsoExportButtons from '@/components/taller/PulsoExportButtons'
 import { fmtMoney } from '@/components/taller/utils'
 import { getUserTenantRole } from '@/app/actions/dashboards'
+import InfoTooltip from '@/components/taller/InfoTooltip'
 
 const VALID_AGG = new Set<Agg>(['dia', 'semana', 'mes', 'anio'])
 
@@ -189,8 +190,7 @@ export default async function PulsoPage({
       .lte('week_end', hasta),
     // Empleados activos
     db.from('employees')
-      .select('id, name, last_name, color, initials, role')
-      .eq('is_active', true),
+      .select('id, name, last_name, color, initials, role'),
     // Cartera: servicios terminados sin cobrar
     db.from('services').select('id')
       .is('paid_at', null).neq('status', 'invalid').eq('work_completed', true),
@@ -268,7 +268,7 @@ export default async function PulsoPage({
   const idsWithPayroll = new Set(payMap.keys())
 
   const mecanicos = ((empleadosQuery.data ?? []) as any[])
-    .filter(emp => emp.role !== 'admin')
+    .filter(emp => !['admin'].includes(emp.role))
     .filter(emp => idsWithPayroll.has(String(emp.id)) || svcMap.has(String(emp.id)))
     .map(emp => {
       const eid = String(emp.id)
@@ -334,6 +334,11 @@ export default async function PulsoPage({
   const pctAprobacion = totalCotiz > 0 ? (aprobados.length / totalCotiz) * 100 : 0
   const pctCobrado = totalCotiz > 0 ? (cobrados.length / totalCotiz) * 100 : 0
   const pctCancelacion = totalCotiz > 0 ? (noAprobados.length / totalCotiz) * 100 : 0
+
+  /* Ticket promedio + Servicios en proceso */
+  const ticketPromedio = cobrados.length > 0 ? m.ingresos / cobrados.length : 0
+  const ticketMediana = data.ticket_mediana ?? 0
+  const enProceso = (funnelSvcsQuery.data ?? []).filter((s: any) => s.status === 'active' && !s.paid_at).length
 
   /* ── Share state + role ── */
   const PULSO_DASHBOARD_ID = 'e3af77ce-ac39-475d-b040-8626b17f3598'
@@ -405,9 +410,10 @@ export default async function PulsoPage({
 
       <div id="pulso-content">
       {/* ═══════ SECCIÓN 1 — ¿Ganamos o perdemos dinero? ═══════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr_1fr] gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-4 mb-6">
         {/* Col 1: Card negra — Flujo Libre */}
-        <div className="rounded-xl p-6 flex flex-col justify-between" style={{ background: 'var(--taller-hero-bg)', color: 'var(--taller-hero-text)', border: '1px solid var(--taller-border)' }}>
+        <div className="relative rounded-xl p-6 flex flex-col justify-between" style={{ background: 'var(--taller-hero-bg)', color: 'var(--taller-hero-text)', border: '1px solid var(--taller-border)' }}>
+          <InfoTooltip corner text={`El taller generó ${fmtMoney(m.ingresos)} en ingresos y gastó ${fmtMoney(m.egresos)} en total. La diferencia de ${fmtMoney(m.flujoLibre)} es el dinero que realmente quedó en caja este período.`} />
           <div>
             <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-1">Flujo libre del período</p>
             <div className="leading-none" style={{ fontSize: 38, fontWeight: 600 }}>
@@ -437,7 +443,8 @@ export default async function PulsoPage({
         </div>
 
         {/* Col 2: Margen Bruto */}
-        <div className="bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl p-5 flex flex-col">
+        <div className="relative bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl p-5 flex flex-col">
+          <InfoTooltip corner text={`El taller cobró ${fmtMoney(m.ingresos)}. De ese total, ${fmtMoney(m.costoPartes)} se fueron en refacciones. Lo que sobra — ${fmtMoney(m.ingresos - m.costoPartes)} — representa el ${margenBruto.toFixed(1)}% del ingreso total.`} />
           <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">Margen bruto</p>
           <p className="text-3xl font-semibold" style={{ color: margenBruto > 35 ? '#16a34a' : '#dc2626' }}>
             {margenBruto.toFixed(1)}%
@@ -458,7 +465,8 @@ export default async function PulsoPage({
         </div>
 
         {/* Col 3: ROI Mano de Obra */}
-        <div className="bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl p-5 flex flex-col">
+        <div className="relative bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl p-5 flex flex-col">
+          <InfoTooltip corner text={`Se pagaron ${fmtMoney(m.nominaNeta)} en nómina. Esos mecánicos generaron ${fmtMoney(servicios.ingresos_mo)} cobrando mano de obra. Por cada peso pagado, regresaron ${roiMO.toFixed(2)} al taller.`} />
           <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">ROI mano de obra</p>
           <p className="text-3xl font-semibold" style={{ color: roiBadgeColor(roiMO) }}>
             {roiMO.toFixed(1)}x
@@ -476,6 +484,95 @@ export default async function PulsoPage({
           <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-3">
             Por cada peso pagado en nómina, el taller generó ${roiMO.toFixed(2)} en mano de obra.
           </p>
+        </div>
+
+        {/* Col 4: Ticket promedio */}
+        <div className="relative bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl p-5 flex flex-col">
+          <InfoTooltip corner text={`Se cerraron ${cobrados.length} servicios. Promedio: ${fmtMoney(ticketPromedio)} por servicio. Mediana: ${fmtMoney(ticketMediana)} — el valor del servicio típico sin que los tickets grandes lo inflen.`} />
+          <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">Ticket promedio</p>
+          <p className="text-3xl font-semibold text-gray-900 dark:text-[var(--taller-ink)]">
+            {fmtMoney(ticketPromedio)}
+          </p>
+          <div className="flex items-baseline gap-3 mt-1">
+            <span className="text-xs text-gray-400 dark:text-[var(--taller-muted)]">
+              Mediana <span className="text-sm font-semibold" style={{ color: 'var(--taller-ink)' }}>{fmtMoney(ticketMediana)}</span>
+            </span>
+          </div>
+          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">por servicio cobrado</p>
+          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-3">
+            Promedio de ingreso generado por cada servicio cerrado en el período.
+          </p>
+        </div>
+
+        {/* Col 5: Servicios en proceso */}
+        <div className="relative bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl p-5 flex flex-col">
+          <InfoTooltip corner text="Estos son servicios con status activo que aún no han sido cobrados. Representan trabajo vivo en el taller en este momento." />
+          <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">En proceso ahora</p>
+          <p className="text-3xl font-semibold" style={{ color: enProceso > 0 ? '#16a34a' : '#9ca3af' }}>
+            {enProceso}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">servicios activos sin cobrar</p>
+          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-3">
+            Trabajo vivo en el taller en este momento.
+          </p>
+        </div>
+      </div>
+
+      {/* Desglose financiero */}
+      <div className="bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl p-5 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Columna INGRESOS */}
+          <div>
+            <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-3">
+              Ingresos <span className="font-semibold" style={{ color: '#0070f3' }}>{fmtMoney(m.ingresos)}</span>
+            </p>
+            {[
+              { label: 'Mano de obra', value: servicios.ingresos_mo },
+              { label: 'Partes cliente', value: servicios.ingresos_partes_cliente },
+            ].sort((a, b) => b.value - a.value).map(row => {
+              const pct = m.ingresos > 0 ? (row.value / m.ingresos) * 100 : 0
+              return (
+                <div key={row.label} className="mb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-600 dark:text-[var(--taller-ink)]">{row.label}</span>
+                    <span className="text-xs text-gray-600 dark:text-[var(--taller-ink)]">
+                      {fmtMoney(row.value)} <span className="text-gray-400 dark:text-[var(--taller-muted)]">({pct.toFixed(1)}%)</span>
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-100 dark:bg-[var(--taller-progress-bg)] rounded-full h-2">
+                    <div className="h-2 rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, background: '#0070f3' }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Columna EGRESOS */}
+          <div>
+            <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-3">
+              Egresos <span className="font-semibold" style={{ color: '#dc2626' }}>{fmtMoney(m.egresos)}</span>
+            </p>
+            {[
+              { label: 'Gastos operativos', value: m.totalGastos },
+              { label: 'Nómina', value: m.nominaNeta },
+              { label: 'Costo de partes', value: m.costoPartes },
+            ].sort((a, b) => b.value - a.value).map(row => {
+              const pct = m.ingresos > 0 ? (row.value / m.ingresos) * 100 : 0
+              return (
+                <div key={row.label} className="mb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-600 dark:text-[var(--taller-ink)]">{row.label}</span>
+                    <span className="text-xs text-gray-600 dark:text-[var(--taller-ink)]">
+                      {fmtMoney(row.value)} <span className="text-gray-400 dark:text-[var(--taller-muted)]">({pct.toFixed(1)}%)</span>
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-100 dark:bg-[var(--taller-progress-bg)] rounded-full h-2">
+                    <div className="h-2 rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, background: '#dc2626' }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
 
