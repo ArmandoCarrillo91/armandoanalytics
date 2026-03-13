@@ -37,7 +37,7 @@ export async function getDashboards(tenantSlug: string) {
   const { data, error } = await supabase
     .from('dashboards')
     .select(`
-      id, name, slug, description, created_at, updated_at,
+      id, name, slug, description, is_public, public_token, public_token_expires_at, created_at, updated_at,
       charts(count)
     `)
     .eq('tenant_id', tenant.id)
@@ -200,6 +200,78 @@ export async function createChart(
   })
 
   return data
+}
+
+// Get current user's role for a tenant
+export async function getUserTenantRole(tenantSlug: string): Promise<string | null> {
+  const supabase = await getSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data } = await supabase
+    .from('tenant_users')
+    .select('role, tenant:tenants!inner(slug)')
+    .eq('user_id', user.id)
+    .eq('tenant.slug', tenantSlug)
+    .single()
+
+  return data?.role ?? null
+}
+
+// Toggle public share link for a dashboard
+export async function toggleDashboardShare(
+  dashboardId: string,
+  action: 'enable' | 'disable' | 'renew'
+): Promise<{ is_public: boolean; public_token: string | null; public_token_expires_at: string | null }> {
+  const supabase = await getSupabase()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  // Get dashboard to find tenant_id
+  const { data: dashboard } = await supabase
+    .from('dashboards')
+    .select('id, tenant_id, public_token')
+    .eq('id', dashboardId)
+    .single()
+  if (!dashboard) throw new Error('Dashboard not found')
+
+  // Check user has admin or editor role
+  const { data: membership } = await supabase
+    .from('tenant_users')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('tenant_id', dashboard.tenant_id)
+    .single()
+  if (!membership || membership.role === 'viewer') {
+    throw new Error('Insufficient permissions')
+  }
+
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+
+  if (action === 'enable') {
+    const token = dashboard.public_token ?? crypto.randomUUID()
+    const { error } = await supabase
+      .from('dashboards')
+      .update({ is_public: true, public_token: token, public_token_expires_at: expiresAt })
+      .eq('id', dashboardId)
+    if (error) throw error
+    return { is_public: true, public_token: token, public_token_expires_at: expiresAt }
+  } else if (action === 'renew') {
+    const { error } = await supabase
+      .from('dashboards')
+      .update({ public_token_expires_at: expiresAt })
+      .eq('id', dashboardId)
+    if (error) throw error
+    return { is_public: true, public_token: dashboard.public_token, public_token_expires_at: expiresAt }
+  } else {
+    const { error } = await supabase
+      .from('dashboards')
+      .update({ is_public: false })
+      .eq('id', dashboardId)
+    if (error) throw error
+    return { is_public: false, public_token: dashboard.public_token, public_token_expires_at: null }
+  }
 }
 
 // Get audit history for a dashboard or chart

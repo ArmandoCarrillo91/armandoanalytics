@@ -1,17 +1,25 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getDashboards, createDashboard } from '@/app/actions/dashboards'
+import { getDashboards, createDashboard, getUserTenantRole } from '@/app/actions/dashboards'
+import SharePopover from '@/components/SharePopover'
 
 export default function TallerPage() {
   const [dashboards, setDashboards] = useState<any[]>([])
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   useEffect(() => {
-    getDashboards('taller')
-      .then(setDashboards)
+    Promise.all([
+      getDashboards('taller'),
+      getUserTenantRole('taller'),
+    ])
+      .then(([dbs, role]) => {
+        setDashboards(dbs)
+        setUserRole(role)
+      })
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
@@ -29,6 +37,18 @@ export default function TallerPage() {
       setCreating(false)
     }
   }
+
+  function handleShareUpdate(dashboardId: string, isPublic: boolean, token: string | null, expiresAt: string | null) {
+    setDashboards(prev =>
+      prev.map(d =>
+        d.id === dashboardId
+          ? { ...d, is_public: isPublic, public_token: token, public_token_expires_at: expiresAt }
+          : d
+      )
+    )
+  }
+
+  const canShare = userRole === 'admin' || userRole === 'editor'
 
   if (loading) return (
     <div style={{ padding: '24px', color: '#A1A1AA', fontSize: '13px' }}>
@@ -84,9 +104,20 @@ export default function TallerPage() {
               padding: '12px 16px',
               border: '1px solid #EAEAEA', borderRadius: '8px',
               fontSize: '13px', fontWeight: 500, color: '#111111',
-              cursor: 'pointer', background: 'white'
+              cursor: 'pointer', background: 'white',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
-              {d.name}
+              <span>{d.name}</span>
+              {canShare && (
+                <SharePopover
+                  dashboardId={d.id}
+                  dashboardName={d.name}
+                  isPublic={d.is_public ?? false}
+                  publicToken={d.public_token ?? null}
+                  expiresAt={d.public_token_expires_at ?? null}
+                  onUpdate={(isPublic, token, expiresAt) => handleShareUpdate(d.id, isPublic, token, expiresAt)}
+                />
+              )}
             </div>
           ))}
         </div>

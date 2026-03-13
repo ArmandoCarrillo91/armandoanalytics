@@ -6,6 +6,9 @@ export interface Dashboard {
   slug: string
   description?: string
   layout_config?: object
+  is_public: boolean
+  public_token: string | null
+  public_token_expires_at: string | null
   created_at: string
   updated_at: string
   charts?: Chart[]
