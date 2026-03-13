@@ -1,17 +1,20 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import InviteUserModal from '@/components/InviteUserModal'
 
 interface Tenant {
   slug: string
   name: string
 }
 
-export default function Sidebar({ tenants, email }: { tenants: Tenant[]; email: string }) {
+export default function Sidebar({ tenants, email, isPlatformAdmin }: { tenants: Tenant[]; email: string; isPlatformAdmin?: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
+  const [showInvite, setShowInvite] = useState(false)
 
   async function handleLogout() {
     const supabase = createClient()
@@ -108,6 +111,37 @@ export default function Sidebar({ tenants, email }: { tenants: Tenant[]; email: 
         })}
       </nav>
 
+      {/* Invite button (admin only) */}
+      {isPlatformAdmin && (
+        <div style={{ padding: '0 16px 8px' }}>
+          <button
+            onClick={() => setShowInvite(true)}
+            style={{
+              width: '100%',
+              padding: '7px 0',
+              fontSize: 12,
+              fontWeight: 500,
+              borderRadius: 8,
+              border: '1px dashed var(--border-light)',
+              background: 'transparent',
+              color: 'var(--text-gray)',
+              cursor: 'pointer',
+              transition: 'background 0.15s, color 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#F4F4F5'
+              e.currentTarget.style.color = 'var(--text-black)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.color = 'var(--text-gray)'
+            }}
+          >
+            + Invitar usuario
+          </button>
+        </div>
+      )}
+
       {/* Footer */}
       <div
         style={{
@@ -173,6 +207,7 @@ export default function Sidebar({ tenants, email }: { tenants: Tenant[]; email: 
           </svg>
         </button>
       </div>
+      {showInvite && <InviteUserModal onClose={() => setShowInvite(false)} />}
     </aside>
   )
 }
