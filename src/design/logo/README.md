@@ -1,4 +1,4 @@
-# Logo System — ArmandoAnalytics
+# Logo System — armandoanalytics
 
 Single source of truth: `generate-logo.ts`
 

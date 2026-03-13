@@ -99,7 +99,7 @@ export default async function SharePage({
               marginLeft: '6px',
             }}
           >
-            Shared by ArmandoAnalytics
+            Shared by armandoanalytics
           </span>
         </div>
       </div>
@@ -143,7 +143,7 @@ export default async function SharePage({
             marginLeft: '6px',
           }}
         >
-          Shared by ArmandoAnalytics
+          Shared by armandoanalytics
         </span>
       </div>
     </div>

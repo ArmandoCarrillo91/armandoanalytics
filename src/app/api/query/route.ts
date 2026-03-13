@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing sql or tenantSlug' }, { status: 400 })
   }
 
-  // Get tenant credentials from ArmandoAnalytics DB
+  // Get tenant credentials from armandoanalytics DB
   const cookieStore = await cookies()
   const aa = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
