@@ -574,6 +574,11 @@ export default async function PulsoPage({
             })}
           </div>
         </div>
+        <p className="text-[10px] mt-3" style={{ color: 'var(--taller-muted)' }}>
+          <span className="font-semibold">Partes cliente</span> — refacciones cobradas al cliente por servicio.{' '}
+          <span className="font-semibold">Gastos</span> — compras generales del taller (aceite, filtros, consumibles).{' '}
+          <span className="font-semibold">Nómina</span> — pagos registrados a mecánicos en el período.
+        </p>
       </div>
 
       {/* ═══════ SECCIÓN 2 — ¿Qué requiere atención hoy? ═══════ */}
