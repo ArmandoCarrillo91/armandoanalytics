@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import InviteUserModal from '@/components/InviteUserModal'
 
 const NAV_ITEMS = [
   { label: 'Pulso', href: '/dashboard/taller/pulso', icon: '♡' },
@@ -11,9 +13,11 @@ const NAV_ITEMS = [
   { label: 'Trabajo', href: '/dashboard/taller/trabajo', icon: '⚙' },
 ]
 
-export default function TallerSidebar({ onNavigate, otherTenants = [] }: { onNavigate?: () => void; otherTenants?: { slug: string; name: string }[] }) {
+export default function TallerSidebar({ onNavigate, otherTenants = [], isPlatformAdmin }: { onNavigate?: () => void; otherTenants?: { slug: string; name: string }[]; isPlatformAdmin?: boolean }) {
+  console.log('isPlatformAdmin:', isPlatformAdmin)
   const pathname = usePathname()
   const router = useRouter()
+  const [showInvite, setShowInvite] = useState(false)
 
   async function handleLogout() {
     const supabase = createClient()
@@ -154,6 +158,38 @@ export default function TallerSidebar({ onNavigate, otherTenants = [] }: { onNav
         )}
       </nav>
 
+      {/* Invite button (admin only) */}
+      {isPlatformAdmin && (
+        <div style={{ padding: '0 20px 8px' }}>
+          <button
+            onClick={() => setShowInvite(true)}
+            style={{
+              width: '100%',
+              padding: '7px 0',
+              fontSize: 12,
+              fontWeight: 500,
+              borderRadius: 8,
+              border: '1px dashed var(--taller-border)',
+              background: 'transparent',
+              color: 'var(--taller-muted)',
+              cursor: 'pointer',
+              transition: 'background 0.15s, color 0.15s',
+              fontFamily: "'IBM Plex Mono', monospace",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(45, 106, 79, 0.08)'
+              e.currentTarget.style.color = 'var(--taller-ink)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.color = 'var(--taller-muted)'
+            }}
+          >
+            + Invitar usuario
+          </button>
+        </div>
+      )}
+
       {/* Footer */}
       <div
         style={{
@@ -208,6 +244,7 @@ export default function TallerSidebar({ onNavigate, otherTenants = [] }: { onNav
           </svg>
         </button>
       </div>
+      {showInvite && <InviteUserModal onClose={() => setShowInvite(false)} />}
     </div>
   )
 }

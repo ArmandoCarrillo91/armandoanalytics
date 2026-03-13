@@ -21,11 +21,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Sin permisos de administrador' }, { status: 403 })
   }
 
-  const { email, password, tenant_id } = await request.json()
+  const { email, password, tenant_id, role } = await request.json()
 
   if (!email || !password || !tenant_id) {
     return NextResponse.json({ error: 'Email, contraseña y tenant son requeridos' }, { status: 400 })
   }
+
+  const validRoles = ['admin', 'editor', 'viewer']
+  const safeRole = validRoles.includes(role) ? role : 'viewer'
 
   const admin = createAdminClient()
 
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
   // Step 3: Insert into tenant_users table
   const { error: tenantError } = await admin
     .from('tenant_users')
-    .insert({ tenant_id, user_id: newUserId, role: 'admin' })
+    .insert({ tenant_id, user_id: newUserId, role: safeRole })
 
   if (tenantError) {
     return NextResponse.json({ error: `Error insertando en tenant_users: ${tenantError.message}` }, { status: 400 })

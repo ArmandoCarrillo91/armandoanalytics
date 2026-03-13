@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import TallerShell from '@/components/taller/TallerShell'
 import '@/components/taller/taller.css'
@@ -13,16 +14,30 @@ export default async function TallerLayout({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  /* Fetch only active tenants the user belongs to, exclude current ('taller') */
-  const { data: tenantRows } = await supabase
-    .from('tenant_users')
-    .select('tenant:tenants!inner(slug, name)')
-    .eq('user_id', user.id)
-    .eq('tenant.is_active', true)
+  /* Fetch only active tenants the user belongs to + admin flag */
+  const supabaseAdmin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const [{ data: tenantRows }, { data: profile }] = await Promise.all([
+    supabase
+      .from('tenant_users')
+      .select('tenant:tenants!inner(slug, name)')
+      .eq('user_id', user.id)
+      .eq('tenant.is_active', true),
+    supabaseAdmin
+      .from('users')
+      .select('is_platform_admin')
+      .eq('id', user.id)
+      .single(),
+  ])
 
   const otherTenants = (tenantRows ?? [])
     .map((r: any) => ({ slug: r.tenant.slug as string, name: r.tenant.name as string }))
     .filter((t) => t.slug !== 'taller')
+
+  const isPlatformAdmin = profile?.is_platform_admin === true
 
   return (
     <>
@@ -33,7 +48,7 @@ export default async function TallerLayout({
         rel="stylesheet"
       />
 
-      <TallerShell otherTenants={otherTenants}>{children}</TallerShell>
+      <TallerShell otherTenants={otherTenants} isPlatformAdmin={isPlatformAdmin}>{children}</TallerShell>
     </>
   )
 }

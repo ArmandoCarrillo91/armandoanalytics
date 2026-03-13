@@ -12,6 +12,7 @@ export default function InviteUserModal({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [tenantId, setTenantId] = useState('')
+  const [role, setRole] = useState('viewer')
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -42,7 +43,7 @@ export default function InviteUserModal({ onClose }: { onClose: () => void }) {
       const res = await fetch('/api/invite-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, tenant_id: tenantId }),
+        body: JSON.stringify({ email, password, tenant_id: tenantId, role }),
       })
 
       const data = await res.json()
@@ -164,7 +165,7 @@ export default function InviteUserModal({ onClose }: { onClose: () => void }) {
             />
           </label>
 
-          <label style={{ display: 'block', marginBottom: 20 }}>
+          <label style={{ display: 'block', marginBottom: 12 }}>
             <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-gray)', display: 'block', marginBottom: 4 }}>
               Tenant
             </span>
@@ -187,6 +188,32 @@ export default function InviteUserModal({ onClose }: { onClose: () => void }) {
               {tenants.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
+            </select>
+          </label>
+
+          <label style={{ display: 'block', marginBottom: 20 }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-gray)', display: 'block', marginBottom: 4 }}>
+              Rol
+            </span>
+            <select
+              required
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              disabled={loading || success}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                fontSize: 13,
+                border: '1px solid var(--border-light)',
+                borderRadius: 8,
+                outline: 'none',
+                background: '#fff',
+                boxSizing: 'border-box',
+              }}
+            >
+              <option value="admin">Administrador</option>
+              <option value="editor">Editor</option>
+              <option value="viewer">Viewer</option>
             </select>
           </label>
 
