@@ -7,9 +7,10 @@ import { useChartResize } from '../useChartResize'
 
 interface Props {
   data: { label: string; ingresos: number; egresos: number; flujo: number }[]
+  hideLegend?: boolean
 }
 
-export default function PulsoTendencia({ data }: Props) {
+export default function PulsoTendencia({ data, hideLegend }: Props) {
   const { containerRef, chartRef } = useChartResize()
   const allNegative = data.length > 0 && data.every(d => d.flujo < 0)
 
@@ -28,12 +29,13 @@ export default function PulsoTendencia({ data }: Props) {
       },
     },
     legend: {
+      show: !hideLegend,
       bottom: 0,
       textStyle: { fontFamily: FONT, fontSize: 10, color: INK },
       itemWidth: 12,
       itemHeight: 8,
     },
-    grid: { left: 55, right: 20, top: 20, bottom: 40, containLabel: true },
+    grid: { left: 55, right: 20, top: 20, bottom: hideLegend ? 10 : 40, containLabel: true },
     xAxis: {
       type: 'category',
       data: data.map(d => d.label),

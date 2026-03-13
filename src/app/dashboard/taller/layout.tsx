@@ -13,6 +13,17 @@ export default async function TallerLayout({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  /* Fetch only active tenants the user belongs to, exclude current ('taller') */
+  const { data: tenantRows } = await supabase
+    .from('tenant_users')
+    .select('tenant:tenants!inner(slug, name)')
+    .eq('user_id', user.id)
+    .eq('tenant.is_active', true)
+
+  const otherTenants = (tenantRows ?? [])
+    .map((r: any) => ({ slug: r.tenant.slug as string, name: r.tenant.name as string }))
+    .filter((t) => t.slug !== 'taller')
+
   return (
     <>
       {/* Google Fonts for Taller section */}
@@ -22,7 +33,7 @@ export default async function TallerLayout({
         rel="stylesheet"
       />
 
-      <TallerShell>{children}</TallerShell>
+      <TallerShell otherTenants={otherTenants}>{children}</TallerShell>
     </>
   )
 }

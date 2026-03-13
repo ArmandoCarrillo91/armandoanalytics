@@ -23,7 +23,22 @@ export default function LoginPage() {
       setLoading(false)
       return
     }
-    router.push('/dashboard')
+    // Resolve tenant and redirect to pulso
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: tenantUser } = await supabase
+      .from('tenant_users')
+      .select('tenant:tenants(slug)')
+      .eq('user_id', user!.id)
+      .limit(1)
+      .single()
+
+    const slug = (tenantUser?.tenant as any)?.slug
+    if (slug) {
+      router.push(`/dashboard/${slug}/pulso`)
+    } else {
+      console.error('login: could not resolve tenant for user')
+      router.push('/')
+    }
   }
 
   return (

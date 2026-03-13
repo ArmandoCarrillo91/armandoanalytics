@@ -3,10 +3,11 @@ import { getTallerData, getTenantClient } from '@/lib/taller/queries'
 import type { Agg, TallerData } from '@/types/taller'
 import DateRangePicker from '@/components/taller/DateRangePicker'
 import PulsoTendencia from '@/components/taller/charts/PulsoTendencia'
-
 import { fmtMoney } from '@/components/taller/utils'
 
 const VALID_AGG = new Set<Agg>(['dia', 'semana', 'mes', 'anio'])
+
+/* ── Helpers ── */
 
 function defaultDates() {
   const now = new Date()
@@ -25,85 +26,7 @@ function getPreviousPeriod(desde: string, hasta: string) {
   const h = new Date(hasta + 'T12:00:00')
   d.setMonth(d.getMonth() - 1)
   h.setMonth(h.getMonth() - 1)
-  return {
-    desde: d.toISOString().slice(0, 10),
-    hasta: h.toISOString().slice(0, 10),
-  }
-}
-
-/* ── Styles ── */
-
-const card: React.CSSProperties = {
-  background: '#ffffff',
-  border: '1px solid #e5e1d8',
-  borderRadius: 10,
-  padding: 20,
-  display: 'flex',
-  flexDirection: 'column',
-}
-
-const chartWrap: React.CSSProperties = { flex: 1 }
-
-const label: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 500,
-  color: '#97928a',
-  letterSpacing: '1px',
-  textTransform: 'uppercase' as const,
-  fontFamily: "'IBM Plex Mono', monospace",
-  marginBottom: 6,
-}
-
-const kpiValue: React.CSSProperties = {
-  fontSize: 22,
-  fontWeight: 600,
-  color: '#1a1814',
-  fontFamily: "'IBM Plex Mono', monospace",
-}
-
-const kpiSub: React.CSSProperties = {
-  fontSize: 10,
-  color: '#97928a',
-  fontFamily: "'IBM Plex Mono', monospace",
-  marginTop: 2,
-}
-
-const sectionTitle: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 500,
-  color: '#97928a',
-  letterSpacing: '1px',
-  textTransform: 'uppercase' as const,
-  fontFamily: "'IBM Plex Mono', monospace",
-  marginBottom: 8,
-}
-
-const thStyle: React.CSSProperties = {
-  textAlign: 'left' as const,
-  padding: '8px 12px',
-  fontSize: 10,
-  fontWeight: 500,
-  color: '#97928a',
-  letterSpacing: '0.5px',
-  textTransform: 'uppercase' as const,
-  fontFamily: "'IBM Plex Mono', monospace",
-  borderBottom: '2px solid #e5e1d8',
-}
-
-const tdStyle: React.CSSProperties = {
-  padding: '10px 12px',
-  borderBottom: '1px solid #e5e1d8',
-  color: '#1a1814',
-  fontSize: 12,
-  fontFamily: "'IBM Plex Mono', monospace",
-}
-
-/* ── Helpers ── */
-
-function semaforo(v: number, greenFn: (n: number) => boolean, amberFn: (n: number) => boolean): string {
-  if (greenFn(v)) return '#0070f3'
-  if (amberFn(v)) return '#f5a623'
-  return '#c94a4a'
+  return { desde: d.toISOString().slice(0, 10), hasta: h.toISOString().slice(0, 10) }
 }
 
 function computeMetrics(data: TallerData) {
@@ -114,6 +37,18 @@ function computeMetrics(data: TallerData) {
   const egresos = costoPartes + nominaNeta + totalGastos
   const flujoLibre = ingresos - egresos
   return { ingresos, costoPartes, nominaNeta, totalGastos, egresos, flujoLibre }
+}
+
+function roiBadgeColor(roi: number) {
+  if (roi > 2) return '#16a34a'
+  if (roi >= 1.5) return '#d97706'
+  return '#dc2626'
+}
+
+function costColor(pct: number, target: number) {
+  if (pct > target) return '#dc2626'
+  if (pct > target * 0.8) return '#d97706'
+  return '#0070f3'
 }
 
 /* ── Page ── */
@@ -150,10 +85,8 @@ export default async function PulsoPage({
 
   if (error || !data) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' }}>
-        <p style={{ ...label, fontSize: 13, color: '#c94a4a' }}>
-          {error || 'No se pudieron cargar los datos'}
-        </p>
+      <div className="flex items-center justify-center p-10">
+        <p className="text-sm text-red-600">{error || 'No se pudieron cargar los datos'}</p>
       </div>
     )
   }
@@ -174,13 +107,11 @@ export default async function PulsoPage({
     }
   }
 
-  /* ── Section 2: Ratios ── */
+  /* Section 1 ratios */
   const margenBruto = m.ingresos > 0 ? ((m.ingresos - m.costoPartes) / m.ingresos) * 100 : 0
-  const nominaPct = m.ingresos > 0 ? (m.nominaNeta / m.ingresos) * 100 : 0
-  const gastosPct = m.ingresos > 0 ? (m.totalGastos / m.ingresos) * 100 : 0
   const roiMO = m.nominaNeta > 0 ? servicios.ingresos_mo / m.nominaNeta : 0
 
-  /* ── Section 3 left: Tendencia ── */
+  /* Tendencia chart data */
   const costPerLabel = new Map<string, number>()
   for (const d of margen_partes_serie) costPerLabel.set(d.semana, d.costo)
   const numBuckets = ingresos_serie.length
@@ -193,7 +124,7 @@ export default async function PulsoPage({
     return { label: d.semana, ingresos: ing, egresos: egr, flujo: ing - egr }
   })
 
-  /* ── Section 3 right: Gastos jerárquicos por expense_group → categoría ── */
+  /* Gastos jerárquicos por expense_group → categoría */
   const gastosGrouped = new Map<string, number>()
   const gastosPorGrupo = new Map<string, { categoria: string; total: number }[]>()
   for (const g of gastos) {
@@ -211,7 +142,7 @@ export default async function PulsoPage({
     }))
     .sort((a, b) => b.monto - a.monto)
 
-  /* ── Section 4: Estructura de costos ── */
+  /* Estructura de costos */
   const costRows = [
     { name: 'Operación', value: gastosGrouped.get('Operación') ?? 0, target: 40 },
     { name: 'Nómina', value: m.nominaNeta, target: 30 },
@@ -222,70 +153,74 @@ export default async function PulsoPage({
   const totalCostValue = costRows.reduce((s, r) => s + r.value, 0)
   const totalCostPct = m.ingresos > 0 ? (totalCostValue / m.ingresos) * 100 : 0
 
-  /* ── Section 5: ROI por mecánico (subconsultas separadas) ── */
+  /* ── ROI por mecánico (subconsultas separadas) ── */
   const db = await getTenantClient()
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
   const [moQuery, swQuery, spQuery, payrollQuery, empleadosQuery, unpaidSvcsQuery, unpaidMoQuery, unpaidPartsQuery, staleSvcsQuery, funnelSvcsQuery, funnelMoQuery, funnelPartsQuery] = await Promise.all([
     // MO: service_jobs de servicios pagados válidos
-    db
-      .from('service_jobs')
+    db.from('service_jobs')
       .select('employee_id, service_id, labor_price, services!inner(paid_at, status)')
       .not('services.paid_at', 'is', null)
       .neq('services.status', 'invalid')
       .gte('services.paid_at', desde)
       .lte('services.paid_at', hasta),
     // Servicios: service_workers de servicios pagados válidos
-    db
-      .from('service_workers')
+    db.from('service_workers')
       .select('employee_id, service_id, services!inner(paid_at, status)')
       .not('services.paid_at', 'is', null)
       .neq('services.status', 'invalid')
       .gte('services.paid_at', desde)
       .lte('services.paid_at', hasta),
     // Refacciones: service_parts de servicios pagados válidos
-    db
-      .from('service_parts')
+    db.from('service_parts')
       .select('service_id, price, qty, services!inner(paid_at, status)')
       .not('services.paid_at', 'is', null)
       .neq('services.status', 'invalid')
       .gte('services.paid_at', desde)
       .lte('services.paid_at', hasta),
     // Nómina
-    db
-      .from('payroll')
+    db.from('payroll')
       .select('employee_id, base_salary, total_commission')
       .eq('is_paid', true)
       .gte('week_start', desde)
       .lte('week_end', hasta),
-    // Empleados activos (filtrar admin en cliente)
-    db
-      .from('employees')
+    // Empleados activos
+    db.from('employees')
       .select('id, name, last_name, color, initials, role')
       .eq('is_active', true),
-    // Alert 1: Servicios sin cobrar
-    db.from('services').select('id').is('paid_at', null).neq('status', 'invalid'),
-    // Alert 1: MO sin cobrar
-    db.from('service_jobs').select('labor_price, services!inner(status)').is('services.paid_at', null).neq('services.status', 'invalid'),
-    // Alert 1: Refacciones sin cobrar
-    db.from('service_parts').select('price, qty, services!inner(status)').is('services.paid_at', null).neq('services.status', 'invalid'),
-    // Alert 2: Servicios activos con +3 días
-    db.from('services').select('id').eq('status', 'active').is('paid_at', null).lt('created_at', threeDaysAgo),
+    // Cartera: servicios terminados sin cobrar
+    db.from('services').select('id')
+      .is('paid_at', null).neq('status', 'invalid').eq('work_completed', true),
+    // Cartera: MO sin cobrar (terminados)
+    db.from('service_jobs').select('labor_price, services!inner(status)')
+      .is('services.paid_at', null).neq('services.status', 'invalid')
+      .eq('services.work_completed', true),
+    // Cartera: Refacciones sin cobrar (terminados)
+    db.from('service_parts').select('price, qty, services!inner(status)')
+      .is('services.paid_at', null).neq('services.status', 'invalid')
+      .eq('services.work_completed', true),
+    // Servicios activos +3 días
+    db.from('services').select('id')
+      .eq('status', 'active').is('paid_at', null).lt('created_at', threeDaysAgo),
     // Funnel: todos los servicios creados en el período
-    db.from('services').select('id, status, paid_at').gte('created_at', desde).lte('created_at', hasta + 'T23:59:59'),
+    db.from('services').select('id, status, paid_at')
+      .gte('created_at', desde).lte('created_at', hasta + 'T23:59:59'),
     // Funnel: MO de servicios creados en el período
-    db.from('service_jobs').select('service_id, labor_price, services!inner(created_at)').gte('services.created_at', desde).lte('services.created_at', hasta + 'T23:59:59'),
+    db.from('service_jobs').select('service_id, labor_price, services!inner(created_at)')
+      .gte('services.created_at', desde).lte('services.created_at', hasta + 'T23:59:59'),
     // Funnel: Refacciones de servicios creados en el período
-    db.from('service_parts').select('service_id, price, qty, services!inner(created_at)').gte('services.created_at', desde).lte('services.created_at', hasta + 'T23:59:59'),
+    db.from('service_parts').select('service_id, price, qty, services!inner(created_at)')
+      .gte('services.created_at', desde).lte('services.created_at', hasta + 'T23:59:59'),
   ])
 
-  // MO por service_id (de service_jobs — employee_id puede ser null)
+  // MO por service_id
   const moPerService = new Map<string, number>()
   for (const row of (moQuery.data ?? []) as any[]) {
     const sid = String(row.service_id)
     moPerService.set(sid, (moPerService.get(sid) ?? 0) + (Number(row.labor_price) || 0))
   }
 
-  // Servicios por employee_id (de service_workers, COUNT DISTINCT service_id)
+  // Servicios por employee_id (COUNT DISTINCT service_id via service_workers)
   const svcMap = new Map<string, Set<string>>()
   for (const row of (swQuery.data ?? []) as any[]) {
     const eid = String(row.employee_id)
@@ -294,7 +229,7 @@ export default async function PulsoPage({
     svcMap.set(eid, s)
   }
 
-  // MO por employee_id (cruzar service_workers → service_jobs por service_id)
+  // MO por employee_id (cruzar service_workers → service_jobs)
   const moMap = new Map<string, number>()
   svcMap.forEach((serviceIds, eid) => {
     let total = 0
@@ -302,14 +237,14 @@ export default async function PulsoPage({
     moMap.set(eid, total)
   })
 
-  // Refacciones por service_id (de service_parts)
+  // Refacciones por service_id
   const partsPerService = new Map<string, number>()
   for (const row of (spQuery.data ?? []) as any[]) {
     const sid = String(row.service_id)
     partsPerService.set(sid, (partsPerService.get(sid) ?? 0) + ((Number(row.price) * Number(row.qty)) || 0))
   }
 
-  // Refacciones por employee_id (cruzar service_workers → service_parts)
+  // Refacciones por employee_id
   const refMap = new Map<string, number>()
   svcMap.forEach((serviceIds, eid) => {
     let total = 0
@@ -317,7 +252,7 @@ export default async function PulsoPage({
     refMap.set(eid, total)
   })
 
-  // Nómina por employee_id — UN registro por empleado (sin acumular)
+  // Nómina por employee_id — UN registro por empleado (asignación directa)
   const payMap = new Map<string, { sueldo: number; comisiones: number }>()
   for (const row of (payrollQuery.data ?? []) as any[]) {
     const eid = String(row.employee_id)
@@ -327,10 +262,8 @@ export default async function PulsoPage({
     })
   }
 
-  // IDs con payroll en el período
   const idsWithPayroll = new Set(payMap.keys())
 
-  // Cruzar por id de empleado: incluir si tiene payroll O service_workers, excluir admin
   const mecanicos = ((empleadosQuery.data ?? []) as any[])
     .filter(emp => emp.role !== 'admin')
     .filter(emp => idsWithPayroll.has(String(emp.id)) || svcMap.has(String(emp.id)))
@@ -339,7 +272,6 @@ export default async function PulsoPage({
       const mo = moMap.get(eid) ?? 0
       const svcCount = svcMap.get(eid)?.size ?? 0
       const refacciones = refMap.get(eid) ?? 0
-      const totalGenerado = mo + refacciones
       const pay = payMap.get(eid) ?? { sueldo: 0, comisiones: 0 }
       const costoTotal = pay.comisiones + pay.sueldo
       const utilidad = mo - costoTotal
@@ -347,23 +279,21 @@ export default async function PulsoPage({
       const nombre = `${emp.name ?? ''} ${emp.last_name ?? ''}`.trim()
       const iniciales = emp.initials ?? nombre.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
       const color = emp.color ?? '#1a1814'
-      return { nombre, iniciales, color, servicios: svcCount, totalGenerado, mo, refacciones, comisiones: pay.comisiones, sueldo: pay.sueldo, costoTotal, utilidad, roi }
+      return { nombre, iniciales, color, servicios: svcCount, mo, refacciones, comisiones: pay.comisiones, sueldo: pay.sueldo, costoTotal, utilidad, roi }
     })
     .sort((a, b) => b.mo - a.mo)
 
-  // Totales
   const totMec = mecanicos.reduce((t, r) => ({
     servicios: t.servicios + r.servicios,
-    totalGenerado: t.totalGenerado + r.totalGenerado,
     mo: t.mo + r.mo,
     comisiones: t.comisiones + r.comisiones,
     sueldo: t.sueldo + r.sueldo,
     costoTotal: t.costoTotal + r.costoTotal,
     utilidad: t.utilidad + r.utilidad,
-  }), { servicios: 0, totalGenerado: 0, mo: 0, comisiones: 0, sueldo: 0, costoTotal: 0, utilidad: 0 })
+  }), { servicios: 0, mo: 0, comisiones: 0, sueldo: 0, costoTotal: 0, utilidad: 0 })
   const totRoi = totMec.costoTotal > 0 ? totMec.mo / totMec.costoTotal : 0
 
-  /* ── Alertas operativas ── */
+  /* Alertas operativas */
   const unpaidCount = (unpaidSvcsQuery.data ?? []).length
   const unpaidMO = (unpaidMoQuery.data ?? []).reduce((s: number, r: any) => s + (Number(r.labor_price) || 0), 0)
   const unpaidParts = (unpaidPartsQuery.data ?? []).reduce((s: number, r: any) => s + ((Number(r.price) * Number(r.qty)) || 0), 0)
@@ -371,7 +301,7 @@ export default async function PulsoPage({
   const staleCount = (staleSvcsQuery.data ?? []).length
   const lowRoiMecs = mecanicos.filter(mc => mc.costoTotal > 0 && mc.roi < 1.5)
 
-  /* ── Embudo de conversión ── */
+  /* Embudo de conversión */
   const funnelSvcs = (funnelSvcsQuery.data ?? []) as any[]
   const funnelMoData = (funnelMoQuery.data ?? []) as any[]
   const funnelPartsData = (funnelPartsQuery.data ?? []) as any[]
@@ -387,466 +317,550 @@ export default async function PulsoPage({
   }
 
   const sumFunnelValue = (svcs: any[]) => svcs.reduce((s: number, sv: any) => s + (funnelValueMap.get(String(sv.id)) ?? 0), 0)
+
   const cotizaciones = funnelSvcs
   const aprobados = funnelSvcs.filter((s: any) => s.status !== 'invalid')
-  const completados = funnelSvcs.filter((s: any) => s.paid_at !== null)
+  const cobrados = funnelSvcs.filter((s: any) => {
+    if (!s.paid_at || s.status === 'invalid') return false
+    const pd = s.paid_at.slice(0, 10)
+    return pd >= desde && pd <= hasta
+  })
   const noAprobados = funnelSvcs.filter((s: any) => s.status === 'invalid')
 
-  const funnel = [
-    { label: 'Cotizaciones', count: cotizaciones.length, value: sumFunnelValue(cotizaciones), color: '#1a1814' },
-    { label: 'Aprobados', count: aprobados.length, value: sumFunnelValue(aprobados), color: '#0070f3' },
-    { label: 'Completados', count: completados.length, value: sumFunnelValue(completados), color: '#27ae60' },
-  ]
-  const noAprobadosCount = noAprobados.length
-  const noAprobadosValue = sumFunnelValue(noAprobados)
+  const totalCotiz = cotizaciones.length
+  const pctAprobacion = totalCotiz > 0 ? (aprobados.length / totalCotiz) * 100 : 0
+  const pctCobrado = totalCotiz > 0 ? (cobrados.length / totalCotiz) * 100 : 0
+  const pctCancelacion = totalCotiz > 0 ? (noAprobados.length / totalCotiz) * 100 : 0
+
+  /* ════════════════════════════════════ RENDER ════════════════════════════════════ */
 
   return (
-    <div>
+    <div style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
       {/* Header */}
       <div className="taller-header">
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1a1814', fontFamily: "'Lora', serif", margin: 0 }}>
             Pulso
           </h1>
-          <p style={{ fontSize: 12, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace", marginTop: 4 }}>
-            Vista ejecutiva del negocio
-          </p>
+          <p className="text-xs text-gray-400 mt-1">Vista ejecutiva del negocio</p>
         </div>
         <Suspense fallback={null}>
           <DateRangePicker desde={desde} hasta={hasta} agg={agg} basePath="/dashboard/taller/pulso" />
         </Suspense>
       </div>
 
-      {/* ═══ SECCIÓN 1 — HERO ═══ */}
-      <div style={{
-        background: '#1a1a1a',
-        borderRadius: 10,
-        padding: '16px 24px',
-        color: '#ffffff',
-        marginBottom: 20,
-        maxWidth: '40%',
-      }}>
-        {/* Top row: label + vs anterior */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{
-            fontSize: 10, fontWeight: 500, color: '#97928a',
-            letterSpacing: '1px', textTransform: 'uppercase' as const,
-            fontFamily: "'IBM Plex Mono', monospace",
-          }}>
-            FLUJO LIBRE
+      {/* ═══════ SECCIÓN 1 — ¿Ganamos o perdemos dinero? ═══════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr_1fr] gap-4 mb-6">
+        {/* Col 1: Card negra — Flujo Libre */}
+        <div className="rounded-xl p-6 flex flex-col justify-between" style={{ background: '#111', color: '#fff' }}>
+          <div>
+            <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Flujo libre del período</p>
+            <div className="leading-none" style={{ fontSize: 38, fontWeight: 600 }}>
+              {fmtMoney(m.flujoLibre)}
+            </div>
+            <p className="text-sm mt-1" style={{ color: m.flujoLibre >= 0 ? '#16a34a' : '#dc2626' }}>
+              {m.flujoLibre >= 0 ? 'Utilidad positiva en este período' : 'Pérdida en este período'}
+            </p>
           </div>
+
+          <div className="flex gap-8 mt-4">
+            <div>
+              <p className="text-xs text-gray-400">Ingresos</p>
+              <p className="text-base font-semibold" style={{ color: '#0070f3' }}>{fmtMoney(m.ingresos)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Egresos</p>
+              <p className="text-base font-semibold text-gray-300">{fmtMoney(m.egresos)}</p>
+            </div>
+          </div>
+
           {pctChange !== null && (
-            <div style={{ textAlign: 'right' as const }}>
-              <div style={{ fontSize: 10, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace" }}>
-                vs período anterior
-              </div>
-              <div style={{
-                fontSize: 22, fontWeight: 700,
-                fontFamily: "'IBM Plex Mono', monospace",
-                color: pctChange >= 0 ? '#0070f3' : '#c94a4a',
-              }}>
-                {pctChange >= 0 ? '↑' : '↓'} {Math.abs(pctChange).toFixed(1)}%
-              </div>
-            </div>
+            <p className="text-xs mt-4" style={{ color: pctChange >= 0 ? '#16a34a' : '#dc2626' }}>
+              vs período anterior {pctChange >= 0 ? '↑' : '↓'} {Math.abs(pctChange).toFixed(1)}%
+            </p>
           )}
         </div>
 
-        <div style={{
-          fontSize: 36, fontWeight: 700,
-          fontFamily: "'IBM Plex Mono', monospace",
-          marginTop: 4,
-        }}>
-          {fmtMoney(m.flujoLibre)}
-        </div>
-        <p style={{
-          fontSize: 12, fontFamily: "'IBM Plex Mono', monospace",
-          margin: '4px 0 0',
-          color: m.flujoLibre >= 0 ? '#0070f3' : '#c94a4a',
-        }}>
-          {m.flujoLibre >= 0 ? 'Utilidad positiva en este período' : 'Pérdida en este período'}
-        </p>
-        <div style={{ display: 'flex', gap: 28, marginTop: 12 }}>
-          <div>
-            <div style={{ fontSize: 10, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace" }}>Ingresos</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#0070f3', fontFamily: "'IBM Plex Mono', monospace" }}>
-              {fmtMoney(m.ingresos)}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 10, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace" }}>Egresos</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#d4d0c8', fontFamily: "'IBM Plex Mono', monospace" }}>
-              {fmtMoney(m.egresos)}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ═══ SECCIÓN 2 — RATIOS DE SALUD ═══ */}
-      <div className="taller-kpis">
-        <div style={card}>
-          <div style={label}>Margen bruto</div>
-          <div style={{ ...kpiValue, color: semaforo(margenBruto, v => v > 35, v => v >= 25) }}>
+        {/* Col 2: Margen Bruto */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col">
+          <p className="text-xs uppercase tracking-widest text-gray-400 mb-2">Margen bruto</p>
+          <p className="text-3xl font-semibold" style={{ color: margenBruto > 35 ? '#16a34a' : '#dc2626' }}>
             {margenBruto.toFixed(1)}%
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Objetivo &gt;35%</p>
+          <div className="mt-3 w-full bg-gray-100 rounded-full h-1">
+            <div
+              className="h-1 rounded-full transition-all"
+              style={{
+                width: `${Math.min(margenBruto, 100)}%`,
+                background: margenBruto > 35 ? '#0070f3' : '#dc2626',
+              }}
+            />
           </div>
-          <p style={kpiSub}>Objetivo: &gt;35%</p>
+          <p className="text-xs text-gray-400 italic mt-3">
+            Por cada $100 facturados, quedan ${(margenBruto).toFixed(0)} después de pagar refacciones.
+          </p>
         </div>
 
-        <div style={card}>
-          <div style={label}>Nómina / ingresos</div>
-          <div style={{ ...kpiValue, color: semaforo(nominaPct, v => v < 30, v => v <= 40) }}>
-            {nominaPct.toFixed(1)}%
-          </div>
-          <p style={kpiSub}>Objetivo: &lt;30%</p>
-        </div>
-
-        <div style={card}>
-          <div style={label}>Gastos fijos / ingresos</div>
-          <div style={{ ...kpiValue, color: semaforo(gastosPct, v => v < 35, v => v <= 45) }}>
-            {gastosPct.toFixed(1)}%
-          </div>
-          <p style={kpiSub}>Objetivo: &lt;35%</p>
-        </div>
-
-        <div style={card}>
-          <div style={label}>ROI mano de obra</div>
-          <div style={{ ...kpiValue, color: semaforo(roiMO, v => v > 2, v => v >= 1.5) }}>
+        {/* Col 3: ROI Mano de Obra */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col">
+          <p className="text-xs uppercase tracking-widest text-gray-400 mb-2">ROI mano de obra</p>
+          <p className="text-3xl font-semibold" style={{ color: roiBadgeColor(roiMO) }}>
             {roiMO.toFixed(1)}x
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Objetivo &gt;2x</p>
+          <div className="mt-3 w-full bg-gray-100 rounded-full h-1">
+            <div
+              className="h-1 rounded-full transition-all"
+              style={{
+                width: `${Math.min((roiMO / 3) * 100, 100)}%`,
+                background: roiBadgeColor(roiMO),
+              }}
+            />
           </div>
-          <p style={kpiSub}>Objetivo: &gt;2x</p>
-        </div>
-      </div>
-
-      {/* ═══ ALERTAS OPERATIVAS ═══ */}
-      <div className="taller-kpis" style={{ marginBottom: 20 }}>
-        <div style={card}>
-          <div style={label}>Cartera por cobrar</div>
-          <div style={{ ...kpiValue, color: carteraPorCobrar > 0 ? '#c94a4a' : '#97928a' }}>
-            {fmtMoney(carteraPorCobrar)}
-          </div>
-          <p style={kpiSub}>{unpaidCount} servicio{unpaidCount !== 1 ? 's' : ''} sin cobrar</p>
-        </div>
-
-        <div style={card}>
-          <div style={label}>Servicios activos +3 días</div>
-          <div style={{ ...kpiValue, color: staleCount > 0 ? '#f5a623' : '#97928a' }}>
-            {staleCount}
-          </div>
-          <p style={kpiSub}>Requieren atención</p>
-        </div>
-
-        <div style={card}>
-          <div style={label}>Mecánicos con ROI &lt; 1.5x</div>
-          <div style={{ ...kpiValue, color: lowRoiMecs.length > 0 ? '#c94a4a' : '#27ae60' }}>
-            {lowRoiMecs.length}
-          </div>
-          <p style={kpiSub}>
-            {lowRoiMecs.length > 0
-              ? lowRoiMecs.map(mc => mc.nombre.split(' ')[0]).join(', ')
-              : 'Todos en objetivo'}
+          <p className="text-xs text-gray-400 italic mt-3">
+            Por cada peso pagado en nómina, el taller generó ${roiMO.toFixed(2)} en mano de obra.
           </p>
         </div>
       </div>
 
-      {/* ═══ EMBUDO DE CONVERSIÓN ═══ */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <div style={sectionTitle}>Embudo de conversión</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap' }}>
-          {funnel.flatMap((stage, i) => {
-            const pct = i > 0 && funnel[i - 1].count > 0
-              ? ((stage.count / funnel[i - 1].count) * 100).toFixed(0)
-              : null
-            const items = []
-            if (i > 0) {
-              items.push(
-                <div key={`arrow-${i}`} style={{
-                  fontSize: 14, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace",
-                  padding: '0 10px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-                }}>
-                  <span>→</span>
-                  <span style={{ fontSize: 10 }}>{pct}%</span>
-                </div>
-              )
-            }
-            items.push(
-              <div key={stage.label} style={{
-                background: '#f4f2ed', borderRadius: 8, padding: '12px 16px',
-                minWidth: 120, flex: '1 1 0',
-              }}>
-                <div style={{ ...label, marginBottom: 4 }}>{stage.label}</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: stage.color, fontFamily: "'IBM Plex Mono', monospace" }}>
-                  {stage.count}
-                </div>
-                <div style={{ fontSize: 11, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace", marginTop: 2 }}>
-                  {fmtMoney(stage.value)}
-                </div>
-              </div>
-            )
-            return items
-          })}
-          {noAprobadosCount > 0 && (
-            <>
-              <div style={{
-                fontSize: 14, color: '#c94a4a', fontFamily: "'IBM Plex Mono', monospace",
-                padding: '0 10px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-              }}>
-                <span>✗</span>
-              </div>
-              <div style={{
-                background: '#fef2f2', borderRadius: 8, padding: '12px 16px',
-                minWidth: 120, flex: '1 1 0',
-              }}>
-                <div style={{ ...label, marginBottom: 4, color: '#c94a4a' }}>No aprobados</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#c94a4a', fontFamily: "'IBM Plex Mono', monospace" }}>
-                  {noAprobadosCount}
-                </div>
-                <div style={{ fontSize: 11, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace", marginTop: 2 }}>
-                  {fmtMoney(noAprobadosValue)}
-                </div>
-              </div>
-            </>
-          )}
+      {/* ═══════ SECCIÓN 2 — ¿Qué requiere atención hoy? ═══════ */}
+      <div className="mb-6">
+        <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium mb-1">
+          ¿Qué requiere atención hoy?
+        </h2>
+        <p className="text-xs text-gray-400 italic mb-4">
+          Estas son las 3 cosas que puedes resolver hoy.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Card 1: Listo sin cobrar */}
+          <div
+            className="rounded-xl p-5 border"
+            style={{
+              background: carteraPorCobrar > 0 ? '#fef2f2' : '#f0fdf4',
+              borderColor: carteraPorCobrar > 0 ? '#fecaca' : '#bbf7d0',
+            }}
+          >
+            <p className="text-xs uppercase tracking-widest text-gray-400 mb-2">Listo sin cobrar</p>
+            <p className="text-2xl font-semibold" style={{ color: carteraPorCobrar > 0 ? '#dc2626' : '#16a34a' }}>
+              {fmtMoney(carteraPorCobrar)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {unpaidCount} servicio{unpaidCount !== 1 ? 's' : ''} terminado{unpaidCount !== 1 ? 's' : ''} · pendientes de pago
+            </p>
+            <p className="text-xs text-gray-400 italic mt-2">
+              Trabajo entregado que no ha entrado al banco. El cliente ya tiene el carro.
+            </p>
+          </div>
+
+          {/* Card 2: Servicios activos +3 días */}
+          <div
+            className="rounded-xl p-5 border"
+            style={{
+              background: staleCount > 0 ? '#fffbeb' : '#f0fdf4',
+              borderColor: staleCount > 0 ? '#fde68a' : '#bbf7d0',
+            }}
+          >
+            <p className="text-xs uppercase tracking-widest text-gray-400 mb-2">Servicios activos +3 días</p>
+            <p className="text-2xl font-semibold" style={{ color: staleCount > 0 ? '#d97706' : '#16a34a' }}>
+              {staleCount}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Llevan más de 72hrs abiertos</p>
+            <p className="text-xs text-gray-400 italic mt-2">
+              ¿Falta una refacción? ¿O se puede cerrar hoy?
+            </p>
+          </div>
+
+          {/* Card 3: Mecánicos con ROI <1.5x */}
+          <div
+            className="rounded-xl p-5 border"
+            style={{
+              background: lowRoiMecs.length > 0 ? '#fef2f2' : '#f0fdf4',
+              borderColor: lowRoiMecs.length > 0 ? '#fecaca' : '#bbf7d0',
+            }}
+          >
+            <p className="text-xs uppercase tracking-widest text-gray-400 mb-2">Mecánicos con ROI &lt;1.5x</p>
+            <p className="text-2xl font-semibold" style={{ color: lowRoiMecs.length > 0 ? '#dc2626' : '#16a34a' }}>
+              {lowRoiMecs.length}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {lowRoiMecs.length > 0
+                ? lowRoiMecs.map(mc => mc.nombre.split(' ')[0]).join(', ')
+                : 'Todo el equipo es rentable'}
+            </p>
+            {lowRoiMecs.length === 0 && (
+              <p className="text-xs text-gray-400 italic mt-2">Todos generan más de lo que cuestan.</p>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ═══ SECCIÓN 3 — DOS COLUMNAS ═══ */}
-      <div className="taller-row" style={{ marginBottom: 20 }}>
-        <div style={{ ...card, flex: '3 1 0', padding: 14 }}>
-          <div style={{ ...sectionTitle, margin: '0 0 4px' }}>Tendencia en revisión</div>
-          <p style={{ fontSize: 11, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace", margin: '0 0 6px' }}>
-            Ingresos, egresos y flujo libre — por {agg === 'dia' ? 'día' : agg}
-          </p>
-          <div style={chartWrap}>
-            <PulsoTendencia data={tendencia} />
+      {/* ═══════ SECCIÓN 3 — ¿Cuánto del trabajo se cobró? ═══════ */}
+      <div className="mb-6">
+        <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium mb-1">
+          ¿Cuánto del trabajo se cobró?
+        </h2>
+        <p className="text-xs text-gray-400 italic mb-4">
+          El embudo revela dónde se pierde valor antes de que sea dinero.
+        </p>
+
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="grid grid-cols-2 md:grid-cols-4">
+            {/* Cotizaciones */}
+            <div className="p-5">
+              <p className="text-xs uppercase tracking-widest text-gray-400 mb-3">Cotizaciones</p>
+              <p className="text-2xl font-semibold text-gray-900">{cotizaciones.length}</p>
+              <p className="text-xs text-gray-400 mt-1">{fmtMoney(sumFunnelValue(cotizaciones))}</p>
+              <span className="inline-block mt-3 px-2 py-0.5 rounded-full bg-gray-100 text-xs text-gray-500">
+                punto de partida
+              </span>
+            </div>
+
+            {/* Aprobados */}
+            <div className="p-5 border-l border-gray-200 relative">
+              <span className="absolute -left-2.5 top-1/2 -translate-y-1/2 bg-white px-1 text-gray-300 text-sm hidden md:block">→</span>
+              <p className="text-xs uppercase tracking-widest text-gray-400 mb-3">Aprobados</p>
+              <p className="text-2xl font-semibold text-gray-900">{aprobados.length}</p>
+              <p className="text-xs text-gray-400 mt-1">{fmtMoney(sumFunnelValue(aprobados))}</p>
+              <span className="inline-block mt-3 px-2 py-0.5 rounded-full text-xs" style={{ background: '#eff6ff', color: '#0070f3' }}>
+                {pctAprobacion.toFixed(0)}% aprobación
+              </span>
+            </div>
+
+            {/* Cobrados */}
+            <div className="p-5 border-l border-gray-200 relative">
+              <span className="absolute -left-2.5 top-1/2 -translate-y-1/2 bg-white px-1 text-gray-300 text-sm hidden md:block">→</span>
+              <p className="text-xs uppercase tracking-widest text-gray-400 mb-3">Cobrados</p>
+              <p className="text-2xl font-semibold text-gray-900">{cobrados.length}</p>
+              <p className="text-xs text-gray-400 mt-1">{fmtMoney(sumFunnelValue(cobrados))}</p>
+              <span className="inline-block mt-3 px-2 py-0.5 rounded-full text-xs" style={{ background: '#f0fdf4', color: '#16a34a' }}>
+                {pctCobrado.toFixed(0)}% cobrado
+              </span>
+            </div>
+
+            {/* No aprobados */}
+            <div className="p-5 border-l border-gray-200">
+              <p className="text-xs uppercase tracking-widest mb-3" style={{ color: '#dc2626' }}>No aprobados</p>
+              <p className="text-2xl font-semibold" style={{ color: '#dc2626' }}>{noAprobados.length}</p>
+              <p className="text-xs mt-1" style={{ color: '#dc2626' }}>{fmtMoney(sumFunnelValue(noAprobados))}</p>
+              <span className="inline-block mt-3 px-2 py-0.5 rounded-full text-xs" style={{ background: '#fef2f2', color: '#dc2626' }}>
+                {pctCancelacion.toFixed(0)}% cancelación
+              </span>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div style={{ ...card, flex: '2 1 0', padding: 14, overflow: 'auto' }}>
-          <div style={{ ...sectionTitle, margin: '0 0 4px' }}>¿En qué se va el dinero?</div>
-          <p style={{ fontSize: 11, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace", margin: '0 0 10px' }}>
-            Gastos como % de ingresos
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {gastosHierarchy.map(g => (
-              <div key={g.grupo}>
-                {/* Group row */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <div style={{
-                    flex: 1, fontSize: 11, fontWeight: 600,
-                    fontFamily: "'IBM Plex Mono', monospace",
-                    textTransform: 'uppercase' as const,
-                    letterSpacing: '0.5px', color: '#1a1814',
-                  }}>
-                    {g.grupo}
+      {/* ═══════ SECCIÓN 4 — ¿La tendencia sube o baja? ═══════ */}
+      <div className="mb-6">
+        <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium mb-1">
+          ¿La tendencia sube o baja?
+        </h2>
+        <p className="text-xs text-gray-400 italic mb-4">
+          Visualiza la salud financiera del taller a lo largo del tiempo.
+        </p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4">
+          {/* Col 1: Tendencia */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Tendencia del período</p>
+            <p className="text-xs text-gray-400 mb-3">
+              Ingresos · Egresos · Flujo libre — por {agg === 'dia' ? 'día' : agg}
+            </p>
+            <PulsoTendencia data={tendencia} hideLegend />
+            {/* Leyenda manual */}
+            <div className="flex gap-5 mt-3">
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-0.5 rounded-full" style={{ background: '#1a1814' }} />
+                <span className="text-xs text-gray-400">Ingresos</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-0.5 rounded-full border-t border-dashed" style={{ borderColor: '#97928a' }} />
+                <span className="text-xs text-gray-400">Egresos</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-0.5 rounded-full" style={{ background: '#2d6a4f' }} />
+                <span className="text-xs text-gray-400">Flujo libre</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 italic mt-3">
+              Si las líneas se cruzan, el taller opera en pérdida ese día.
+            </p>
+          </div>
+
+          {/* Col 2: ¿En qué se va el dinero? */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5 overflow-auto">
+            <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">¿En qué se va el dinero?</p>
+            <p className="text-xs text-gray-400 mb-4">Gastos como % de ingresos</p>
+
+            <div className="flex flex-col gap-4">
+              {gastosHierarchy.map(g => (
+                <div key={g.grupo}>
+                  {/* Group header */}
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="flex-1 text-xs font-semibold uppercase tracking-wide text-gray-900">
+                      {g.grupo}
+                    </span>
+                    <span className="text-xs font-semibold text-gray-900 whitespace-nowrap">
+                      {g.pct.toFixed(1)}%
+                    </span>
+                    <span className="text-xs text-gray-400 whitespace-nowrap min-w-[70px] text-right">
+                      {fmtMoney(g.monto)}
+                    </span>
                   </div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#1a1814', fontFamily: "'IBM Plex Mono', monospace", whiteSpace: 'nowrap' as const }}>
-                    {g.pct.toFixed(1)}%
+                  <div className="bg-gray-100 rounded h-[3px] mb-2">
+                    <div
+                      className="rounded h-[3px]"
+                      style={{ background: '#dc2626', width: `${Math.min(g.pct, 100)}%` }}
+                    />
                   </div>
-                  <div style={{ fontSize: 11, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace", whiteSpace: 'nowrap' as const, minWidth: 70, textAlign: 'right' as const }}>
-                    {fmtMoney(g.monto)}
-                  </div>
+                  {/* Category rows */}
+                  {g.categorias.map(c => {
+                    const catPct = m.ingresos > 0 ? (c.total / m.ingresos) * 100 : 0
+                    return (
+                      <div key={c.categoria} className="pl-4 mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="flex-1 text-xs text-gray-400">{c.categoria}</span>
+                          <span className="text-xs text-gray-400 whitespace-nowrap min-w-[70px] text-right">
+                            {fmtMoney(c.total)}
+                          </span>
+                        </div>
+                        <div className="bg-gray-100 rounded h-[2px] mt-0.5">
+                          <div
+                            className="rounded h-[2px]"
+                            style={{ background: 'rgba(220,38,38,0.4)', width: `${Math.min(catPct, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-                <div style={{ background: '#f4f2ed', borderRadius: 2, height: 6, marginBottom: 6 }}>
-                  <div style={{ background: '#c94a4a', borderRadius: 2, height: 6, width: `${Math.min(g.pct, 100)}%` }} />
-                </div>
-                {/* Category rows */}
-                {g.categorias.map(c => {
-                  const catPct = m.ingresos > 0 ? (c.total / m.ingresos) * 100 : 0
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════ SECCIÓN 5 — ¿Los costos son estructuralmente sanos? ═══════ */}
+      <div className="mb-6">
+        <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium mb-1">
+          ¿Los costos son estructuralmente sanos?
+        </h2>
+        <p className="text-xs text-gray-400 italic mb-4">
+          Si los costos superan el 65% de los ingresos, el margen se comprime estructuralmente.
+        </p>
+
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="taller-table-wrap">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                    Categoría
+                  </th>
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                    Monto
+                  </th>
+                  <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200 w-[30%]">
+                    &nbsp;
+                  </th>
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                    % ingreso
+                  </th>
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                    Objetivo
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {costRows.map(row => {
+                  const pct = m.ingresos > 0 ? (row.value / m.ingresos) * 100 : 0
+                  const color = costColor(pct, row.target)
                   return (
-                    <div key={c.categoria} style={{ paddingLeft: 20, marginBottom: 3 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ flex: 1, fontSize: 12, color: '#97928a', fontFamily: "'IBM Plex Sans', sans-serif" }}>
-                          {c.categoria}
+                    <tr key={row.name}>
+                      <td className="px-4 py-3 text-xs text-gray-900 border-b border-gray-100">{row.name}</td>
+                      <td className="px-4 py-3 text-xs text-gray-900 text-right border-b border-gray-100">
+                        {fmtMoney(row.value)}
+                      </td>
+                      <td className="px-4 py-3 border-b border-gray-100">
+                        <div className="bg-gray-100 rounded-full h-2">
+                          <div
+                            className="h-2 rounded-full transition-all"
+                            style={{ width: `${Math.min(pct, 100)}%`, background: color }}
+                          />
                         </div>
-                        <div style={{ fontSize: 11, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace", whiteSpace: 'nowrap' as const, minWidth: 70, textAlign: 'right' as const }}>
-                          {fmtMoney(c.total)}
-                        </div>
-                      </div>
-                      <div style={{ background: '#f4f2ed', borderRadius: 1, height: 3, marginTop: 2 }}>
-                        <div style={{ background: 'rgba(201,74,74,0.6)', borderRadius: 1, height: 3, width: `${Math.min(catPct, 100)}%` }} />
-                      </div>
-                    </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-right font-semibold border-b border-gray-100" style={{ color }}>
+                        {pct.toFixed(1)}%
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-400 text-right border-b border-gray-100">
+                        &lt;{row.target}%
+                      </td>
+                    </tr>
                   )
                 })}
-              </div>
-            ))}
+                {/* Total row */}
+                <tr>
+                  <td className="px-4 py-3 text-xs font-bold text-gray-900 border-t-2 border-gray-300">Total costos</td>
+                  <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                    {fmtMoney(totalCostValue)}
+                  </td>
+                  <td className="px-4 py-3 border-t-2 border-gray-300">
+                    <div className="bg-gray-100 rounded-full h-2">
+                      <div
+                        className="h-2 rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(totalCostPct, 100)}%`,
+                          background: costColor(totalCostPct, 65),
+                        }}
+                      />
+                    </div>
+                  </td>
+                  <td
+                    className="px-4 py-3 text-xs text-right font-bold border-t-2 border-gray-300"
+                    style={{ color: costColor(totalCostPct, 65) }}
+                  >
+                    {totalCostPct.toFixed(1)}%
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-400 text-right border-t-2 border-gray-300">
+                    &lt;65%
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      {/* ═══ SECCIÓN 4 — ESTRUCTURA DE COSTOS ═══ */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <div style={sectionTitle}>Estructura de costos</div>
-        <p style={{ fontSize: 11, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace", margin: '0 0 16px' }}>
-          ¿Los costos crecen más rápido que los ingresos? Objetivo: total costos &lt;65% de ingresos
+      {/* ═══════ SECCIÓN 6 — ¿Cada mecánico genera más de lo que cuesta? ═══════ */}
+      <div className="mb-6">
+        <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium mb-1">
+          ¿Cada mecánico genera más de lo que cuesta?
+        </h2>
+        <p className="text-xs text-gray-400 italic mb-4">
+          El equipo es el negocio. Si un mecánico no es rentable, hay que actuar.
         </p>
-        <div className="taller-table-wrap">
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={thStyle}>Categoría</th>
-                <th style={{ ...thStyle, width: '35%' }}>&nbsp;</th>
-                <th style={{ ...thStyle, textAlign: 'right' as const }}>% ingreso</th>
-                <th style={{ ...thStyle, textAlign: 'right' as const }}>Monto</th>
-                <th style={{ ...thStyle, textAlign: 'right' as const }}>Objetivo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {costRows.map(row => {
-                const pct = m.ingresos > 0 ? (row.value / m.ingresos) * 100 : 0
-                const color = semaforo(pct, v => v < row.target, v => v < row.target * 1.3)
-                return (
-                  <tr key={row.name}>
-                    <td style={tdStyle}>{row.name}</td>
-                    <td style={tdStyle}>
-                      <div style={{ background: '#f4f2ed', borderRadius: 4, height: 8 }}>
-                        <div style={{
-                          background: '#1a1a1a',
-                          borderRadius: 4,
-                          height: 8,
-                          width: `${Math.min(pct, 100)}%`,
-                          transition: 'width 0.3s',
-                        }} />
-                      </div>
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: 'right' as const, color, fontWeight: 600 }}>
-                      {pct.toFixed(1)}%
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: 'right' as const }}>
-                      {fmtMoney(row.value)}
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: 'right' as const, color: '#97928a', fontSize: 10 }}>
-                      &lt;{row.target}%
+
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="taller-table-wrap">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                    Mecánico
+                  </th>
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                    Servicios
+                  </th>
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                    MO generada
+                  </th>
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                    Comisión
+                  </th>
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                    Sueldo
+                  </th>
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                    Costo total
+                  </th>
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                    Utilidad
+                  </th>
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                    ROI
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {mecanicos.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-6 text-center text-xs text-gray-400">
+                      Sin datos de mecánicos en este período
                     </td>
                   </tr>
-                )
-              })}
-              {/* Total row */}
-              <tr>
-                <td style={{ ...tdStyle, fontWeight: 700, borderBottom: 'none' }}>Total costos</td>
-                <td style={{ ...tdStyle, borderBottom: 'none' }}>
-                  <div style={{ background: '#f4f2ed', borderRadius: 4, height: 8 }}>
-                    <div style={{
-                      background: '#1a1a1a',
-                      borderRadius: 4,
-                      height: 8,
-                      width: `${Math.min(totalCostPct, 100)}%`,
-                      transition: 'width 0.3s',
-                    }} />
-                  </div>
-                </td>
-                <td style={{
-                  ...tdStyle, textAlign: 'right' as const, fontWeight: 700,
-                  borderBottom: 'none',
-                  color: semaforo(totalCostPct, v => v < 65, v => v < 75),
-                }}>
-                  {totalCostPct.toFixed(1)}%
-                </td>
-                <td style={{ ...tdStyle, textAlign: 'right' as const, fontWeight: 700, borderBottom: 'none' }}>
-                  {fmtMoney(totalCostValue)}
-                </td>
-                <td style={{ ...tdStyle, textAlign: 'right' as const, color: '#97928a', fontSize: 10, borderBottom: 'none' }}>
-                  &lt;65%
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ═══ SECCIÓN 5 — ROI POR MECÁNICO ═══ */}
-      <div style={card}>
-        <div style={sectionTitle}>Rendimiento por mecánico</div>
-        <div className="taller-table-wrap">
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={thStyle}>Mecánico</th>
-                <th style={{ ...thStyle, textAlign: 'right' as const }}>Servicios</th>
-                <th style={{ ...thStyle, textAlign: 'right' as const }}>Total generado</th>
-                <th style={{ ...thStyle, textAlign: 'right' as const }}>MO generada</th>
-                <th style={{ ...thStyle, textAlign: 'right' as const }}>Comisión</th>
-                <th style={{ ...thStyle, textAlign: 'right' as const }}>Sueldo</th>
-                <th style={{ ...thStyle, textAlign: 'right' as const }}>Costo total</th>
-                <th style={{ ...thStyle, textAlign: 'right' as const }}>Utilidad</th>
-                <th style={{ ...thStyle, textAlign: 'right' as const }}>ROI</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mecanicos.length === 0 && (
-                <tr>
-                  <td colSpan={9} style={{ ...tdStyle, textAlign: 'center' as const, color: '#97928a' }}>
-                    Sin datos de mecánicos en este período
-                  </td>
-                </tr>
-              )}
-              {mecanicos.map(mec => (
-                <tr key={mec.nombre}>
-                  <td style={tdStyle}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{
-                        width: 28, height: 28, borderRadius: '50%',
-                        background: mec.color, color: '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 10, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace",
-                        flexShrink: 0,
-                      }}>
-                        {mec.iniciales}
+                )}
+                {mecanicos.map(mec => (
+                  <tr key={mec.nombre}>
+                    <td className="px-4 py-3 text-xs text-gray-900 border-b border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shrink-0"
+                          style={{ background: mec.color }}
+                        >
+                          {mec.iniciales}
+                        </div>
+                        {mec.nombre}
                       </div>
-                      {mec.nombre}
-                    </div>
-                  </td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const }}>{mec.servicios}</td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const }}>{fmtMoney(mec.totalGenerado)}</td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const }}>{fmtMoney(mec.mo)}</td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const }}>{fmtMoney(mec.comisiones)}</td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const }}>{fmtMoney(mec.sueldo)}</td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const }}>{fmtMoney(mec.costoTotal)}</td>
-                  <td style={{
-                    ...tdStyle, textAlign: 'right' as const,
-                    color: mec.utilidad >= 0 ? '#0070f3' : '#c94a4a',
-                    fontWeight: 600,
-                  }}>
-                    {fmtMoney(mec.utilidad)}
-                  </td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const }}>
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '2px 8px',
-                      borderRadius: 4,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: '#fff',
-                      background: semaforo(mec.roi, v => v > 2, v => v >= 1.5),
-                    }}>
-                      {mec.roi.toFixed(1)}x
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {/* Fila de totales */}
-              {mecanicos.length > 0 && (
-                <tr>
-                  <td style={{ ...tdStyle, fontWeight: 700, borderBottom: 'none' }}>Total</td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const, fontWeight: 700, borderBottom: 'none' }}>{totMec.servicios}</td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const, fontWeight: 700, borderBottom: 'none' }}>{fmtMoney(totMec.totalGenerado)}</td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const, fontWeight: 700, borderBottom: 'none' }}>{fmtMoney(totMec.mo)}</td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const, fontWeight: 700, borderBottom: 'none' }}>{fmtMoney(totMec.comisiones)}</td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const, fontWeight: 700, borderBottom: 'none' }}>{fmtMoney(totMec.sueldo)}</td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const, fontWeight: 700, borderBottom: 'none' }}>{fmtMoney(totMec.costoTotal)}</td>
-                  <td style={{
-                    ...tdStyle, textAlign: 'right' as const, fontWeight: 700, borderBottom: 'none',
-                    color: totMec.utilidad >= 0 ? '#0070f3' : '#c94a4a',
-                  }}>
-                    {fmtMoney(totMec.utilidad)}
-                  </td>
-                  <td style={{ ...tdStyle, textAlign: 'right' as const, fontWeight: 700, borderBottom: 'none' }}>
-                    {totRoi.toFixed(1)}x
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-900 text-right border-b border-gray-100">
+                      {mec.servicios}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-900 text-right border-b border-gray-100">
+                      {fmtMoney(mec.mo)}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-900 text-right border-b border-gray-100">
+                      {fmtMoney(mec.comisiones)}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-900 text-right border-b border-gray-100">
+                      {fmtMoney(mec.sueldo)}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-900 text-right border-b border-gray-100">
+                      {fmtMoney(mec.costoTotal)}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-right font-semibold border-b border-gray-100" style={{ color: '#0070f3' }}>
+                      {fmtMoney(mec.utilidad)}
+                    </td>
+                    <td className="px-4 py-3 text-right border-b border-gray-100">
+                      <span
+                        className="inline-block px-2 py-0.5 rounded text-xs font-semibold text-white"
+                        style={{ background: roiBadgeColor(mec.roi) }}
+                      >
+                        {mec.roi.toFixed(1)}x
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {mecanicos.length > 0 && (
+                  <tr>
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 border-t-2 border-gray-300">Total</td>
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                      {totMec.servicios}
+                    </td>
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                      {fmtMoney(totMec.mo)}
+                    </td>
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                      {fmtMoney(totMec.comisiones)}
+                    </td>
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                      {fmtMoney(totMec.sueldo)}
+                    </td>
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                      {fmtMoney(totMec.costoTotal)}
+                    </td>
+                    <td className="px-4 py-3 text-xs font-bold text-right border-t-2 border-gray-300" style={{ color: '#0070f3' }}>
+                      {fmtMoney(totMec.utilidad)}
+                    </td>
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                      <span
+                        className="inline-block px-2 py-0.5 rounded text-xs font-semibold text-white"
+                        style={{ background: roiBadgeColor(totRoi) }}
+                      >
+                        {totRoi.toFixed(1)}x
+                      </span>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        <p className="text-xs text-gray-400 italic mt-3">
+          ROI = MO generada ÷ costo total. Un mecánico con ROI &lt;1.5x necesita más servicios o menor costo.
+        </p>
       </div>
     </div>
   )

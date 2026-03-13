@@ -35,10 +35,14 @@ export async function GET(request: NextRequest) {
         .eq('user_id', session.user.id)
         .single()
 
-      const slug = (tenantUser?.tenants as any)?.slug ?? 'taller'
-      return NextResponse.redirect(`${origin}/dashboard/${slug}`)
+      const slug = (tenantUser?.tenants as any)?.slug
+      if (slug) {
+        return NextResponse.redirect(`${origin}/dashboard/${slug}/pulso`)
+      }
+      console.error('auth/callback: could not resolve tenant for user', session.user.id)
+      return NextResponse.redirect(origin)
     }
   }
 
-  return NextResponse.redirect(`${origin}/dashboard/taller`)
+  return NextResponse.redirect(origin)
 }

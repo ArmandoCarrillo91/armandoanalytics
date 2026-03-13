@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { label: 'Trabajo', href: '/dashboard/taller/trabajo', icon: '⚙' },
 ]
 
-export default function TallerSidebar({ onNavigate }: { onNavigate?: () => void }) {
+export default function TallerSidebar({ onNavigate, otherTenants = [] }: { onNavigate?: () => void; otherTenants?: { slug: string; name: string }[] }) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -107,45 +107,51 @@ export default function TallerSidebar({ onNavigate }: { onNavigate?: () => void 
           )
         })}
 
-        {/* Otros tenants */}
-        <div
-          style={{
-            padding: '0 20px',
-            marginTop: 28,
-            marginBottom: 8,
-            fontSize: 10,
-            fontWeight: 500,
-            color: 'var(--taller-muted)',
-            letterSpacing: '1.5px',
-            textTransform: 'uppercase' as const,
-            fontFamily: "'IBM Plex Mono', monospace",
-          }}
-        >
-          Otros tenants
-        </div>
+        {/* Otros tenants — only if user has access to more than taller */}
+        {otherTenants.length > 0 && (
+          <>
+            <div
+              style={{
+                padding: '0 20px',
+                marginTop: 28,
+                marginBottom: 8,
+                fontSize: 10,
+                fontWeight: 500,
+                color: 'var(--taller-muted)',
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase' as const,
+                fontFamily: "'IBM Plex Mono', monospace",
+              }}
+            >
+              Otros tenants
+            </div>
 
-        <Link
-          href="/dashboard/energy"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '9px 20px',
-            fontSize: 13,
-            fontWeight: 400,
-            color: 'var(--taller-ink)',
-            background: 'transparent',
-            borderLeft: '3px solid transparent',
-            textDecoration: 'none',
-            transition: 'background 0.15s',
-            fontFamily: "'IBM Plex Mono', monospace",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(45, 106, 79, 0.04)' }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
-        >
-          <span style={{ fontSize: 14, opacity: 0.5 }}>⚡</span>
-          Energy Cycle
-        </Link>
+            {otherTenants.map((t) => (
+              <Link
+                key={t.slug}
+                href={`/dashboard/${t.slug}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '9px 20px',
+                  fontSize: 13,
+                  fontWeight: 400,
+                  color: 'var(--taller-ink)',
+                  background: 'transparent',
+                  borderLeft: '3px solid transparent',
+                  textDecoration: 'none',
+                  transition: 'background 0.15s',
+                  fontFamily: "'IBM Plex Mono', monospace",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(45, 106, 79, 0.04)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+              >
+                {t.name}
+              </Link>
+            ))}
+          </>
+        )}
       </nav>
 
       {/* Footer */}
