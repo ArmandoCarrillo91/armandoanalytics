@@ -4,6 +4,7 @@ import type { Agg, TallerData } from '@/types/taller'
 import DateRangePicker from '@/components/taller/DateRangePicker'
 import PulsoTendencia from '@/components/taller/charts/PulsoTendencia'
 import PulsoShareButton from '@/components/taller/PulsoShareButton'
+import PulsoExportButtons from '@/components/taller/PulsoExportButtons'
 import { fmtMoney } from '@/components/taller/utils'
 import { getUserTenantRole } from '@/app/actions/dashboards'
 
@@ -347,6 +348,35 @@ export default async function PulsoPage({
   const shareState = dashboardRow.data
   console.log('userRole:', userRole, 'canShare:', canShare)
 
+  /* ── Export data ── */
+  const exportData = {
+    periodo: { desde, hasta },
+    kpis: {
+      flujo_libre: m.flujoLibre,
+      ingresos: m.ingresos,
+      egresos: m.egresos,
+      margen_bruto: margenBruto,
+      roi_mano_de_obra: roiMO,
+    },
+    alertas: {
+      cartera_por_cobrar: carteraPorCobrar,
+      servicios_sin_cobrar: unpaidCount,
+      servicios_activos_mas_3_dias: staleCount,
+      mecanicos_roi_bajo: lowRoiMecs.map(mc => ({ nombre: mc.nombre, roi: mc.roi })),
+    },
+    cotizaciones: {
+      total: totalCotiz,
+      aprobados: aprobados.length,
+      cobrados: cobrados.length,
+      no_aprobados: noAprobados.length,
+      pct_aprobacion: pctAprobacion,
+      pct_cobrado: pctCobrado,
+      pct_cancelacion: pctCancelacion,
+    },
+    tendencia,
+    gastos_breakdown: gastosHierarchy.map(g => ({ grupo: g.grupo, monto: g.monto, pct: g.pct })),
+  }
+
   /* ════════════════════════════════════ RENDER ════════════════════════════════════ */
 
   return (
@@ -370,9 +400,11 @@ export default async function PulsoPage({
               initialExpiresAt={shareState.public_token_expires_at ?? null}
             />
           )}
+          <PulsoExportButtons data={exportData} />
         </div>
       </div>
 
+      <div id="pulso-content">
       {/* ═══════ SECCIÓN 1 — ¿Ganamos o perdemos dinero? ═══════ */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr_1fr] gap-4 mb-6">
         {/* Col 1: Card negra — Flujo Libre */}
@@ -886,6 +918,7 @@ export default async function PulsoPage({
           ROI = MO generada ÷ costo total. Un mecánico con ROI &lt;1.5x necesita más servicios o menor costo.
         </p>
       </div>
+      </div>{/* /pulso-content */}
     </div>
   )
 }
