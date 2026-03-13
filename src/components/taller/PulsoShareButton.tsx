@@ -95,10 +95,10 @@ export default function PulsoShareButton({ initialIsPublic, initialToken, initia
           fontSize: 11,
           fontWeight: 500,
           fontFamily: 'var(--taller-font-m)',
-          background: 'var(--taller-surface)',
-          border: '1px solid var(--taller-border)',
+          background: 'var(--taller-accent-primary)',
+          border: '1px solid var(--taller-accent-primary)',
           borderRadius: 6,
-          color: 'var(--taller-muted)',
+          color: '#ffffff',
           cursor: 'pointer',
           transition: 'color 0.15s, border-color 0.15s',
         }}

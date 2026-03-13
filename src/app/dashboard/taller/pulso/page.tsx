@@ -345,6 +345,7 @@ export default async function PulsoPage({
   ])
   const canShare = userRole === 'admin' || userRole === 'editor'
   const shareState = dashboardRow.data
+  console.log('userRole:', userRole, 'canShare:', canShare)
 
   /* ════════════════════════════════════ RENDER ════════════════════════════════════ */
 
