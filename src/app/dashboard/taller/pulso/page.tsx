@@ -528,7 +528,7 @@ export default async function PulsoPage({
             </p>
             {[
               { label: 'Mano de obra', value: servicios.ingresos_mo },
-              { label: 'Partes cliente', value: servicios.ingresos_partes_cliente },
+              { label: 'Refacciones venta', value: servicios.ingresos_partes_cliente },
             ].sort((a, b) => b.value - a.value).map(row => {
               const pct = m.ingresos > 0 ? (row.value / m.ingresos) * 100 : 0
               return (
@@ -555,7 +555,7 @@ export default async function PulsoPage({
             {[
               { label: 'Gastos operativos', value: m.totalGastos },
               { label: 'Nómina', value: m.nominaNeta },
-              { label: 'Costo de partes', value: m.costoPartes },
+              { label: 'Refacciones compra', value: m.costoPartes },
             ].sort((a, b) => b.value - a.value).map(row => {
               const pct = m.ingresos > 0 ? (row.value / m.ingresos) * 100 : 0
               return (
@@ -575,7 +575,7 @@ export default async function PulsoPage({
           </div>
         </div>
         <p className="text-[10px] mt-3" style={{ color: 'var(--taller-muted)' }}>
-          <span className="font-semibold">Partes cliente</span> — refacciones cobradas al cliente por servicio.{' '}
+          <span className="font-semibold">Refacciones venta</span> — refacciones cobradas al cliente por servicio.{' '}
           <span className="font-semibold">Gastos</span> — compras generales del taller (aceite, filtros, consumibles).{' '}
           <span className="font-semibold">Nómina</span> — pagos registrados a mecánicos en el período.
         </p>
