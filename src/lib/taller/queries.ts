@@ -1,5 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import type {
   Agg,
@@ -33,6 +33,25 @@ export async function getTenantClient() {
   )
 
   const { data: tenant } = await appDb
+    .from('tenants')
+    .select('db_url, db_anon_key')
+    .eq('slug', 'taller')
+    .single()
+
+  if (!tenant?.db_url || !tenant?.db_anon_key) {
+    throw new Error('Tenant "taller" not found')
+  }
+
+  return createClient(tenant.db_url, tenant.db_anon_key)
+}
+
+/** Tenant client using admin (service-role) — no cookies needed (for public pages). */
+export async function getTenantClientAdmin() {
+  const adminDb = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+  const { data: tenant } = await adminDb
     .from('tenants')
     .select('db_url, db_anon_key')
     .eq('slug', 'taller')
@@ -100,10 +119,11 @@ export async function getTallerData(
   fechaInicio: string,
   fechaFin: string,
   agg: Agg = 'dia',
+  dbOverride?: SupabaseClient,
 ): Promise<TallerData> {
   const desde = sanitizeDate(fechaInicio)
   const hasta = sanitizeDate(fechaFin)
-  const db = await getTenantClient()
+  const db = dbOverride ?? await getTenantClient()
 
   const [qServices, qPaidParts, qPayroll, qExpenses, qMecanicos, qPayrollMec, qEmployees, qPending, qServiceWorkers, qServiceParts] = await Promise.all([
     // Q1: Services created in period (counts only, no nested joins)

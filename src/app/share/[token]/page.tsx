@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import PublicDashboard from './PublicDashboard'
+import PulsoPublic from './PulsoPublic'
 
 const SENSITIVE_WORDS = ['nómina', 'nomina', 'cuentas', 'salario', 'sueldo', 'payroll']
 
@@ -14,7 +15,7 @@ export default async function SharePage({
   const { data: dashboard } = await supabase
     .from('dashboards')
     .select(`
-      id, name, description, public_token_expires_at,
+      id, name, slug, description, public_token_expires_at,
       charts(
         id, title, subtitle, chart_type,
         display_config,
@@ -63,6 +64,44 @@ export default async function SharePage({
         <p style={{ fontSize: '16px', color: 'var(--text-gray)', fontWeight: 500 }}>
           Este enlace ha expirado. Solicita uno nuevo al administrador.
         </p>
+      </div>
+    )
+  }
+
+  // Pulso is a static dashboard — render its content directly
+  if (dashboard.slug === 'pulso') {
+    return (
+      <div style={{ background: 'var(--bg-canvas)', minHeight: '100vh' }}>
+        <PulsoPublic />
+
+        {/* Watermark */}
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '32px 0 24px',
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: 'var(--text-muted)',
+              letterSpacing: '0.5px',
+            }}
+          >
+            AA
+          </span>
+          <span
+            style={{
+              fontSize: '11px',
+              color: 'var(--text-muted)',
+              marginLeft: '6px',
+            }}
+          >
+            Shared by ArmandoAnalytics
+          </span>
+        </div>
       </div>
     )
   }
