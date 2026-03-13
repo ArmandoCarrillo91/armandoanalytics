@@ -1,9 +1,10 @@
 'use client'
 
 import ReactECharts from 'echarts-for-react'
-import { BORDER, INK, FONT } from '../chartColors'
+import { FONT } from '../chartColors'
 import { fmtMoney } from '../utils'
 import { useChartResize } from '../useChartResize'
+import { useChartColors } from '../useChartColors'
 
 interface Props {
   data: { grupo: string; monto: number; pct: number }[]
@@ -11,13 +12,14 @@ interface Props {
 
 export default function PulsoGastosBar({ data }: Props) {
   const { containerRef, chartRef } = useChartResize()
+  const { ink, border } = useChartColors()
 
   const option = {
     tooltip: {
       trigger: 'axis',
-      backgroundColor: '#fff',
-      borderColor: BORDER,
-      textStyle: { fontFamily: FONT, fontSize: 11, color: INK },
+      backgroundColor: 'transparent',
+      borderColor: border,
+      textStyle: { fontFamily: FONT, fontSize: 11, color: ink },
       formatter: (params: any) => {
         const p = params[0]
         if (!p) return ''
@@ -31,7 +33,7 @@ export default function PulsoGastosBar({ data }: Props) {
       type: 'category',
       data: data.map(d => d.grupo),
       inverse: true,
-      axisLabel: { fontFamily: FONT, fontSize: 11, color: INK },
+      axisLabel: { fontFamily: FONT, fontSize: 11, color: ink },
       axisLine: { show: false },
       axisTick: { show: false },
     },
@@ -46,7 +48,7 @@ export default function PulsoGastosBar({ data }: Props) {
           position: 'right',
           fontFamily: FONT,
           fontSize: 10,
-          color: INK,
+          color: ink,
           formatter: (p: any) => {
             const d = data[p.dataIndex]
             return `${d.pct.toFixed(1)}%  ${fmtMoney(d.monto)}`

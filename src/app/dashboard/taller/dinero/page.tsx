@@ -314,7 +314,7 @@ export default async function DineroPage({
                             width: 28,
                             height: 28,
                             borderRadius: '50%',
-                            backgroundColor: isMec ? 'var(--taller-blue-l)' : '#f0ece4',
+                            backgroundColor: isMec ? 'var(--taller-blue-l)' : 'var(--taller-progress-bg)',
                             color: isMec ? 'var(--taller-blue)' : 'var(--taller-muted)',
                             fontSize: 11,
                             fontWeight: 600,

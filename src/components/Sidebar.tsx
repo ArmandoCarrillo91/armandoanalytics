@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import InviteUserModal from '@/components/InviteUserModal'
+import ThemeToggle from '@/components/ThemeToggle'
 
 interface Tenant {
   slug: string
@@ -93,13 +94,13 @@ export default function Sidebar({ tenants, email, isPlatformAdmin }: { tenants: 
                 fontSize: 13,
                 fontWeight: active ? 500 : 400,
                 color: active ? 'var(--text-black)' : 'var(--text-gray)',
-                background: active ? '#F4F4F5' : 'transparent',
+                background: active ? 'var(--bg-hover)' : 'transparent',
                 borderLeft: `2px solid ${active ? 'var(--accent)' : 'transparent'}`,
                 textDecoration: 'none',
                 transition: 'background 0.15s',
               }}
               onMouseEnter={(e) => {
-                if (!active) e.currentTarget.style.background = '#F4F4F5'
+                if (!active) e.currentTarget.style.background = 'var(--bg-hover)'
               }}
               onMouseLeave={(e) => {
                 if (!active) e.currentTarget.style.background = 'transparent'
@@ -129,7 +130,7 @@ export default function Sidebar({ tenants, email, isPlatformAdmin }: { tenants: 
               transition: 'background 0.15s, color 0.15s',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#F4F4F5'
+              e.currentTarget.style.background = 'var(--bg-hover)'
               e.currentTarget.style.color = 'var(--text-black)'
             }}
             onMouseLeave={(e) => {
@@ -158,7 +159,7 @@ export default function Sidebar({ tenants, email, isPlatformAdmin }: { tenants: 
             height: 28,
             borderRadius: '50%',
             background: 'var(--text-black)',
-            color: '#fff',
+            color: 'var(--bg-light)',
             fontSize: 10,
             fontWeight: 500,
             display: 'flex',
@@ -182,6 +183,7 @@ export default function Sidebar({ tenants, email, isPlatformAdmin }: { tenants: 
         >
           {email}
         </span>
+        <ThemeToggle />
         <button
           onClick={handleLogout}
           title="Cerrar sesión"

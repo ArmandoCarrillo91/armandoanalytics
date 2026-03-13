@@ -1,9 +1,10 @@
 'use client'
 
 import ReactECharts from 'echarts-for-react'
-import { BORDER, INK, FONT } from '../chartColors'
+import { FONT } from '../chartColors'
 import { fmtMoney, fmtAxis } from '../utils'
 import { useChartResize } from '../useChartResize'
+import { useChartColors } from '../useChartColors'
 
 interface Props {
   data: { label: string; ingresos: number; egresos: number; flujo: number }[]
@@ -12,14 +13,15 @@ interface Props {
 
 export default function PulsoTendencia({ data, hideLegend }: Props) {
   const { containerRef, chartRef } = useChartResize()
+  const { ink, muted, border } = useChartColors()
   const allNegative = data.length > 0 && data.every(d => d.flujo < 0)
 
   const option = {
     tooltip: {
       trigger: 'axis',
-      backgroundColor: '#fff',
-      borderColor: BORDER,
-      textStyle: { fontFamily: FONT, fontSize: 11, color: INK },
+      backgroundColor: 'transparent',
+      borderColor: border,
+      textStyle: { fontFamily: FONT, fontSize: 11, color: ink },
       formatter: (params: any) => {
         let r = `<b>${params[0]?.axisValue || ''}</b>`
         params.forEach((p: any) => {
@@ -31,7 +33,7 @@ export default function PulsoTendencia({ data, hideLegend }: Props) {
     legend: {
       show: !hideLegend,
       bottom: 0,
-      textStyle: { fontFamily: FONT, fontSize: 10, color: INK },
+      textStyle: { fontFamily: FONT, fontSize: 10, color: ink },
       itemWidth: 12,
       itemHeight: 8,
     },
@@ -39,8 +41,8 @@ export default function PulsoTendencia({ data, hideLegend }: Props) {
     xAxis: {
       type: 'category',
       data: data.map(d => d.label),
-      axisLabel: { fontFamily: FONT, fontSize: 10, color: INK },
-      axisLine: { lineStyle: { color: BORDER } },
+      axisLabel: { fontFamily: FONT, fontSize: 10, color: ink },
+      axisLine: { lineStyle: { color: border } },
       axisTick: { show: false },
     },
     yAxis: {
@@ -48,18 +50,18 @@ export default function PulsoTendencia({ data, hideLegend }: Props) {
       axisLabel: {
         fontFamily: FONT,
         fontSize: 10,
-        color: INK,
+        color: ink,
         formatter: (v: number) => fmtAxis(v),
       },
-      splitLine: { lineStyle: { color: BORDER, type: 'dashed' } },
+      splitLine: { lineStyle: { color: border, type: 'dashed' } },
     },
     series: [
       {
         name: 'Ingresos',
         type: 'line',
         data: data.map(d => d.ingresos),
-        lineStyle: { color: '#1a1814', width: 2 },
-        itemStyle: { color: '#1a1814' },
+        lineStyle: { color: ink, width: 2 },
+        itemStyle: { color: ink },
         symbol: 'circle',
         symbolSize: 4,
         smooth: true,
@@ -68,8 +70,8 @@ export default function PulsoTendencia({ data, hideLegend }: Props) {
         name: 'Egresos',
         type: 'line',
         data: data.map(d => d.egresos),
-        lineStyle: { color: '#97928a', width: 2, type: 'dashed' },
-        itemStyle: { color: '#97928a' },
+        lineStyle: { color: muted, width: 2, type: 'dashed' },
+        itemStyle: { color: muted },
         symbol: 'circle',
         symbolSize: 4,
         smooth: true,

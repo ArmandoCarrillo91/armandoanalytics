@@ -1,9 +1,10 @@
 'use client'
 
 import ReactECharts from 'echarts-for-react'
-import { PRIMARY, NEUTRAL, BORDER, INK, FONT } from '../chartColors'
+import { PRIMARY, NEUTRAL, FONT } from '../chartColors'
 import { fmtMoney, fmtAxis } from '../utils'
 import { useChartResize } from '../useChartResize'
+import { useChartColors } from '../useChartColors'
 
 interface Props {
   data: { nombre: string; mo: number; comision: number }[]
@@ -11,15 +12,16 @@ interface Props {
 
 export default function ProduccionMecanicos({ data }: Props) {
   const { containerRef, chartRef } = useChartResize()
+  const { ink, border } = useChartColors()
   const sorted = [...data].sort((a, b) => a.mo - b.mo)
 
   const option = {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      backgroundColor: '#fff',
-      borderColor: BORDER,
-      textStyle: { fontFamily: FONT, fontSize: 11, color: INK },
+      backgroundColor: 'transparent',
+      borderColor: border,
+      textStyle: { fontFamily: FONT, fontSize: 11, color: ink },
       formatter: (params: any) => {
         const name = params[0]?.axisValue || ''
         let margen = 0
@@ -38,21 +40,21 @@ export default function ProduccionMecanicos({ data }: Props) {
     },
     legend: {
       bottom: 0,
-      textStyle: { fontFamily: FONT, fontSize: 10, color: INK },
+      textStyle: { fontFamily: FONT, fontSize: 10, color: ink },
       itemWidth: 12,
       itemHeight: 8,
     },
     grid: { left: 10, right: 10, top: 10, bottom: 40, containLabel: true },
     xAxis: {
       type: 'value',
-      axisLabel: { fontFamily: FONT, fontSize: 10, color: INK, formatter: (v: number) => fmtAxis(v) },
-      splitLine: { lineStyle: { color: BORDER, type: 'dashed' } },
+      axisLabel: { fontFamily: FONT, fontSize: 10, color: ink, formatter: (v: number) => fmtAxis(v) },
+      splitLine: { lineStyle: { color: border, type: 'dashed' } },
     },
     yAxis: {
       type: 'category',
       data: sorted.map((d) => d.nombre),
-      axisLabel: { fontFamily: FONT, fontSize: 10, color: INK },
-      axisLine: { lineStyle: { color: BORDER } },
+      axisLabel: { fontFamily: FONT, fontSize: 10, color: ink },
+      axisLine: { lineStyle: { color: border } },
       axisTick: { show: false },
     },
     series: [

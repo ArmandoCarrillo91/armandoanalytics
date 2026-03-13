@@ -78,12 +78,13 @@ export default function InviteUserModal({ onClose }: { onClose: () => void }) {
     >
       <div
         style={{
-          background: '#fff',
+          background: 'var(--bg-elevated)',
           borderRadius: 12,
           padding: 24,
           width: 380,
           maxWidth: '90vw',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          boxShadow: 'var(--shadow-modal)',
+          border: '1px solid var(--border-light)',
         }}
       >
         <h2 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 600, color: 'var(--text-black)' }}>
@@ -94,8 +95,8 @@ export default function InviteUserModal({ onClose }: { onClose: () => void }) {
           <div style={{
             padding: '10px 14px',
             borderRadius: 8,
-            background: '#ECFDF5',
-            color: '#065F46',
+            background: 'var(--success-bg)',
+            color: 'var(--success-fg)',
             fontSize: 13,
             marginBottom: 16,
           }}>
@@ -107,8 +108,8 @@ export default function InviteUserModal({ onClose }: { onClose: () => void }) {
           <div style={{
             padding: '10px 14px',
             borderRadius: 8,
-            background: '#FEF2F2',
-            color: '#991B1B',
+            background: 'var(--error-bg)',
+            color: 'var(--error-fg)',
             fontSize: 13,
             marginBottom: 16,
             wordBreak: 'break-word',
@@ -137,6 +138,8 @@ export default function InviteUserModal({ onClose }: { onClose: () => void }) {
                 borderRadius: 8,
                 outline: 'none',
                 boxSizing: 'border-box',
+                background: 'var(--bg-inset)',
+                color: 'var(--text-black)',
               }}
             />
           </label>
@@ -161,6 +164,8 @@ export default function InviteUserModal({ onClose }: { onClose: () => void }) {
                 borderRadius: 8,
                 outline: 'none',
                 boxSizing: 'border-box',
+                background: 'var(--bg-inset)',
+                color: 'var(--text-black)',
               }}
             />
           </label>
@@ -181,8 +186,9 @@ export default function InviteUserModal({ onClose }: { onClose: () => void }) {
                 border: '1px solid var(--border-light)',
                 borderRadius: 8,
                 outline: 'none',
-                background: '#fff',
+                background: 'var(--bg-inset)',
                 boxSizing: 'border-box',
+                color: 'var(--text-black)',
               }}
             >
               {tenants.map((t) => (
@@ -207,8 +213,9 @@ export default function InviteUserModal({ onClose }: { onClose: () => void }) {
                 border: '1px solid var(--border-light)',
                 borderRadius: 8,
                 outline: 'none',
-                background: '#fff',
+                background: 'var(--bg-inset)',
                 boxSizing: 'border-box',
+                color: 'var(--text-black)',
               }}
             >
               <option value="admin">Administrador</option>
@@ -228,7 +235,7 @@ export default function InviteUserModal({ onClose }: { onClose: () => void }) {
                 fontWeight: 500,
                 borderRadius: 8,
                 border: '1px solid var(--border-light)',
-                background: '#fff',
+                background: 'var(--bg-elevated)',
                 color: 'var(--text-gray)',
                 cursor: 'pointer',
               }}

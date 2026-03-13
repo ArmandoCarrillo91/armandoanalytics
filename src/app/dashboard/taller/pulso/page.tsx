@@ -3,7 +3,9 @@ import { getTallerData, getTenantClient } from '@/lib/taller/queries'
 import type { Agg, TallerData } from '@/types/taller'
 import DateRangePicker from '@/components/taller/DateRangePicker'
 import PulsoTendencia from '@/components/taller/charts/PulsoTendencia'
+import PulsoShareButton from '@/components/taller/PulsoShareButton'
 import { fmtMoney } from '@/components/taller/utils'
+import { getUserTenantRole } from '@/app/actions/dashboards'
 
 const VALID_AGG = new Set<Agg>(['dia', 'semana', 'mes', 'anio'])
 
@@ -332,6 +334,18 @@ export default async function PulsoPage({
   const pctCobrado = totalCotiz > 0 ? (cobrados.length / totalCotiz) * 100 : 0
   const pctCancelacion = totalCotiz > 0 ? (noAprobados.length / totalCotiz) * 100 : 0
 
+  /* ── Share state + role ── */
+  const PULSO_DASHBOARD_ID = 'e3af77ce-ac39-475d-b040-8626b17f3598'
+  const [dashboardRow, userRole] = await Promise.all([
+    db.from('dashboards')
+      .select('is_public, public_token, public_token_expires_at')
+      .eq('id', PULSO_DASHBOARD_ID)
+      .single(),
+    getUserTenantRole('taller'),
+  ])
+  const canShare = userRole === 'admin' || userRole === 'editor'
+  const shareState = dashboardRow.data
+
   /* ════════════════════════════════════ RENDER ════════════════════════════════════ */
 
   return (
@@ -339,22 +353,31 @@ export default async function PulsoPage({
       {/* Header */}
       <div className="taller-header">
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1a1814', fontFamily: "'Lora', serif", margin: 0 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--taller-ink)', fontFamily: 'var(--taller-font-d)', margin: 0 }}>
             Pulso
           </h1>
-          <p className="text-xs text-gray-400 mt-1">Vista ejecutiva del negocio</p>
+          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">Vista ejecutiva del negocio</p>
         </div>
-        <Suspense fallback={null}>
-          <DateRangePicker desde={desde} hasta={hasta} agg={agg} basePath="/dashboard/taller/pulso" />
-        </Suspense>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Suspense fallback={null}>
+            <DateRangePicker desde={desde} hasta={hasta} agg={agg} basePath="/dashboard/taller/pulso" />
+          </Suspense>
+          {canShare && shareState && (
+            <PulsoShareButton
+              initialIsPublic={shareState.is_public ?? false}
+              initialToken={shareState.public_token ?? null}
+              initialExpiresAt={shareState.public_token_expires_at ?? null}
+            />
+          )}
+        </div>
       </div>
 
       {/* ═══════ SECCIÓN 1 — ¿Ganamos o perdemos dinero? ═══════ */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr_1fr] gap-4 mb-6">
         {/* Col 1: Card negra — Flujo Libre */}
-        <div className="rounded-xl p-6 flex flex-col justify-between" style={{ background: '#111', color: '#fff' }}>
+        <div className="rounded-xl p-6 flex flex-col justify-between" style={{ background: 'var(--taller-hero-bg)', color: 'var(--taller-hero-text)', border: '1px solid var(--taller-border)' }}>
           <div>
-            <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Flujo libre del período</p>
+            <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-1">Flujo libre del período</p>
             <div className="leading-none" style={{ fontSize: 38, fontWeight: 600 }}>
               {fmtMoney(m.flujoLibre)}
             </div>
@@ -365,12 +388,12 @@ export default async function PulsoPage({
 
           <div className="flex gap-8 mt-4">
             <div>
-              <p className="text-xs text-gray-400">Ingresos</p>
+              <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)]">Ingresos</p>
               <p className="text-base font-semibold" style={{ color: '#0070f3' }}>{fmtMoney(m.ingresos)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-400">Egresos</p>
-              <p className="text-base font-semibold text-gray-300">{fmtMoney(m.egresos)}</p>
+              <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)]">Egresos</p>
+              <p className="text-base font-semibold text-gray-300 dark:text-[var(--taller-muted)]">{fmtMoney(m.egresos)}</p>
             </div>
           </div>
 
@@ -382,13 +405,13 @@ export default async function PulsoPage({
         </div>
 
         {/* Col 2: Margen Bruto */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col">
-          <p className="text-xs uppercase tracking-widest text-gray-400 mb-2">Margen bruto</p>
+        <div className="bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl p-5 flex flex-col">
+          <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">Margen bruto</p>
           <p className="text-3xl font-semibold" style={{ color: margenBruto > 35 ? '#16a34a' : '#dc2626' }}>
             {margenBruto.toFixed(1)}%
           </p>
-          <p className="text-xs text-gray-400 mt-1">Objetivo &gt;35%</p>
-          <div className="mt-3 w-full bg-gray-100 rounded-full h-1">
+          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">Objetivo &gt;35%</p>
+          <div className="mt-3 w-full bg-gray-100 dark:bg-[var(--taller-progress-bg)] rounded-full h-1">
             <div
               className="h-1 rounded-full transition-all"
               style={{
@@ -397,19 +420,19 @@ export default async function PulsoPage({
               }}
             />
           </div>
-          <p className="text-xs text-gray-400 italic mt-3">
+          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-3">
             Por cada $100 facturados, quedan ${(margenBruto).toFixed(0)} después de pagar refacciones.
           </p>
         </div>
 
         {/* Col 3: ROI Mano de Obra */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col">
-          <p className="text-xs uppercase tracking-widest text-gray-400 mb-2">ROI mano de obra</p>
+        <div className="bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl p-5 flex flex-col">
+          <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">ROI mano de obra</p>
           <p className="text-3xl font-semibold" style={{ color: roiBadgeColor(roiMO) }}>
             {roiMO.toFixed(1)}x
           </p>
-          <p className="text-xs text-gray-400 mt-1">Objetivo &gt;2x</p>
-          <div className="mt-3 w-full bg-gray-100 rounded-full h-1">
+          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">Objetivo &gt;2x</p>
+          <div className="mt-3 w-full bg-gray-100 dark:bg-[var(--taller-progress-bg)] rounded-full h-1">
             <div
               className="h-1 rounded-full transition-all"
               style={{
@@ -418,7 +441,7 @@ export default async function PulsoPage({
               }}
             />
           </div>
-          <p className="text-xs text-gray-400 italic mt-3">
+          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-3">
             Por cada peso pagado en nómina, el taller generó ${roiMO.toFixed(2)} en mano de obra.
           </p>
         </div>
@@ -426,10 +449,10 @@ export default async function PulsoPage({
 
       {/* ═══════ SECCIÓN 2 — ¿Qué requiere atención hoy? ═══════ */}
       <div className="mb-6">
-        <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium mb-1">
+        <h2 className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] font-medium mb-1">
           ¿Qué requiere atención hoy?
         </h2>
-        <p className="text-xs text-gray-400 italic mb-4">
+        <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mb-4">
           Estas son las 3 cosas que puedes resolver hoy.
         </p>
 
@@ -438,18 +461,18 @@ export default async function PulsoPage({
           <div
             className="rounded-xl p-5 border"
             style={{
-              background: carteraPorCobrar > 0 ? '#fef2f2' : '#f0fdf4',
-              borderColor: carteraPorCobrar > 0 ? '#fecaca' : '#bbf7d0',
+              background: carteraPorCobrar > 0 ? 'var(--error-bg)' : 'var(--success-bg)',
+              borderColor: carteraPorCobrar > 0 ? 'var(--error-border)' : 'var(--success-border)',
             }}
           >
-            <p className="text-xs uppercase tracking-widest text-gray-400 mb-2">Listo sin cobrar</p>
+            <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">Listo sin cobrar</p>
             <p className="text-2xl font-semibold" style={{ color: carteraPorCobrar > 0 ? '#dc2626' : '#16a34a' }}>
               {fmtMoney(carteraPorCobrar)}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-[var(--taller-muted)] mt-1">
               {unpaidCount} servicio{unpaidCount !== 1 ? 's' : ''} terminado{unpaidCount !== 1 ? 's' : ''} · pendientes de pago
             </p>
-            <p className="text-xs text-gray-400 italic mt-2">
+            <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-2">
               Trabajo entregado que no ha entrado al banco. El cliente ya tiene el carro.
             </p>
           </div>
@@ -458,16 +481,16 @@ export default async function PulsoPage({
           <div
             className="rounded-xl p-5 border"
             style={{
-              background: staleCount > 0 ? '#fffbeb' : '#f0fdf4',
-              borderColor: staleCount > 0 ? '#fde68a' : '#bbf7d0',
+              background: staleCount > 0 ? 'var(--warning-bg)' : 'var(--success-bg)',
+              borderColor: staleCount > 0 ? 'var(--warning-border)' : 'var(--success-border)',
             }}
           >
-            <p className="text-xs uppercase tracking-widest text-gray-400 mb-2">Servicios activos +3 días</p>
+            <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">Servicios activos +3 días</p>
             <p className="text-2xl font-semibold" style={{ color: staleCount > 0 ? '#d97706' : '#16a34a' }}>
               {staleCount}
             </p>
-            <p className="text-xs text-gray-500 mt-1">Llevan más de 72hrs abiertos</p>
-            <p className="text-xs text-gray-400 italic mt-2">
+            <p className="text-xs text-gray-500 dark:text-[var(--taller-muted)] mt-1">Llevan más de 72hrs abiertos</p>
+            <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-2">
               ¿Falta una refacción? ¿O se puede cerrar hoy?
             </p>
           </div>
@@ -476,21 +499,21 @@ export default async function PulsoPage({
           <div
             className="rounded-xl p-5 border"
             style={{
-              background: lowRoiMecs.length > 0 ? '#fef2f2' : '#f0fdf4',
-              borderColor: lowRoiMecs.length > 0 ? '#fecaca' : '#bbf7d0',
+              background: lowRoiMecs.length > 0 ? 'var(--error-bg)' : 'var(--success-bg)',
+              borderColor: lowRoiMecs.length > 0 ? 'var(--error-border)' : 'var(--success-border)',
             }}
           >
-            <p className="text-xs uppercase tracking-widest text-gray-400 mb-2">Mecánicos con ROI &lt;1.5x</p>
+            <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">Mecánicos con ROI &lt;1.5x</p>
             <p className="text-2xl font-semibold" style={{ color: lowRoiMecs.length > 0 ? '#dc2626' : '#16a34a' }}>
               {lowRoiMecs.length}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-[var(--taller-muted)] mt-1">
               {lowRoiMecs.length > 0
                 ? lowRoiMecs.map(mc => mc.nombre.split(' ')[0]).join(', ')
                 : 'Todo el equipo es rentable'}
             </p>
             {lowRoiMecs.length === 0 && (
-              <p className="text-xs text-gray-400 italic mt-2">Todos generan más de lo que cuestan.</p>
+              <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-2">Todos generan más de lo que cuestan.</p>
             )}
           </div>
         </div>
@@ -498,53 +521,53 @@ export default async function PulsoPage({
 
       {/* ═══════ SECCIÓN 3 — ¿Cuánto del trabajo se cobró? ═══════ */}
       <div className="mb-6">
-        <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium mb-1">
+        <h2 className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] font-medium mb-1">
           ¿Cuánto del trabajo se cobró?
         </h2>
-        <p className="text-xs text-gray-400 italic mb-4">
+        <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mb-4">
           El embudo revela dónde se pierde valor antes de que sea dinero.
         </p>
 
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl overflow-hidden">
           <div className="grid grid-cols-2 md:grid-cols-4">
             {/* Cotizaciones */}
             <div className="p-5">
-              <p className="text-xs uppercase tracking-widest text-gray-400 mb-3">Cotizaciones</p>
-              <p className="text-2xl font-semibold text-gray-900">{cotizaciones.length}</p>
-              <p className="text-xs text-gray-400 mt-1">{fmtMoney(sumFunnelValue(cotizaciones))}</p>
-              <span className="inline-block mt-3 px-2 py-0.5 rounded-full bg-gray-100 text-xs text-gray-500">
+              <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-3">Cotizaciones</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-[var(--taller-ink)]">{cotizaciones.length}</p>
+              <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">{fmtMoney(sumFunnelValue(cotizaciones))}</p>
+              <span className="inline-block mt-3 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-[var(--taller-progress-bg)] text-xs text-gray-500 dark:text-[var(--taller-muted)]">
                 punto de partida
               </span>
             </div>
 
             {/* Aprobados */}
-            <div className="p-5 border-l border-gray-200 relative">
-              <span className="absolute -left-2.5 top-1/2 -translate-y-1/2 bg-white px-1 text-gray-300 text-sm hidden md:block">→</span>
-              <p className="text-xs uppercase tracking-widest text-gray-400 mb-3">Aprobados</p>
-              <p className="text-2xl font-semibold text-gray-900">{aprobados.length}</p>
-              <p className="text-xs text-gray-400 mt-1">{fmtMoney(sumFunnelValue(aprobados))}</p>
-              <span className="inline-block mt-3 px-2 py-0.5 rounded-full text-xs" style={{ background: '#eff6ff', color: '#0070f3' }}>
+            <div className="p-5 border-l border-gray-200 dark:border-[var(--taller-border)] relative">
+              <span className="absolute -left-2.5 top-1/2 -translate-y-1/2 bg-white dark:bg-[var(--taller-surface)] px-1 text-gray-300 dark:text-[var(--taller-muted)] text-sm hidden md:block">→</span>
+              <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-3">Aprobados</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-[var(--taller-ink)]">{aprobados.length}</p>
+              <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">{fmtMoney(sumFunnelValue(aprobados))}</p>
+              <span className="inline-block mt-3 px-2 py-0.5 rounded-full text-xs" style={{ background: 'var(--taller-blue-l)', color: '#0070f3' }}>
                 {pctAprobacion.toFixed(0)}% aprobación
               </span>
             </div>
 
             {/* Cobrados */}
-            <div className="p-5 border-l border-gray-200 relative">
-              <span className="absolute -left-2.5 top-1/2 -translate-y-1/2 bg-white px-1 text-gray-300 text-sm hidden md:block">→</span>
-              <p className="text-xs uppercase tracking-widest text-gray-400 mb-3">Cobrados</p>
-              <p className="text-2xl font-semibold text-gray-900">{cobrados.length}</p>
-              <p className="text-xs text-gray-400 mt-1">{fmtMoney(sumFunnelValue(cobrados))}</p>
-              <span className="inline-block mt-3 px-2 py-0.5 rounded-full text-xs" style={{ background: '#f0fdf4', color: '#16a34a' }}>
+            <div className="p-5 border-l border-gray-200 dark:border-[var(--taller-border)] relative">
+              <span className="absolute -left-2.5 top-1/2 -translate-y-1/2 bg-white dark:bg-[var(--taller-surface)] px-1 text-gray-300 dark:text-[var(--taller-muted)] text-sm hidden md:block">→</span>
+              <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-3">Cobrados</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-[var(--taller-ink)]">{cobrados.length}</p>
+              <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">{fmtMoney(sumFunnelValue(cobrados))}</p>
+              <span className="inline-block mt-3 px-2 py-0.5 rounded-full text-xs" style={{ background: 'var(--success-bg)', color: '#16a34a' }}>
                 {pctCobrado.toFixed(0)}% cobrado
               </span>
             </div>
 
             {/* No aprobados */}
-            <div className="p-5 border-l border-gray-200">
+            <div className="p-5 border-l border-gray-200 dark:border-[var(--taller-border)]">
               <p className="text-xs uppercase tracking-widest mb-3" style={{ color: '#dc2626' }}>No aprobados</p>
               <p className="text-2xl font-semibold" style={{ color: '#dc2626' }}>{noAprobados.length}</p>
               <p className="text-xs mt-1" style={{ color: '#dc2626' }}>{fmtMoney(sumFunnelValue(noAprobados))}</p>
-              <span className="inline-block mt-3 px-2 py-0.5 rounded-full text-xs" style={{ background: '#fef2f2', color: '#dc2626' }}>
+              <span className="inline-block mt-3 px-2 py-0.5 rounded-full text-xs" style={{ background: 'var(--error-bg)', color: '#dc2626' }}>
                 {pctCancelacion.toFixed(0)}% cancelación
               </span>
             </div>
@@ -554,62 +577,62 @@ export default async function PulsoPage({
 
       {/* ═══════ SECCIÓN 4 — ¿La tendencia sube o baja? ═══════ */}
       <div className="mb-6">
-        <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium mb-1">
+        <h2 className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] font-medium mb-1">
           ¿La tendencia sube o baja?
         </h2>
-        <p className="text-xs text-gray-400 italic mb-4">
+        <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mb-4">
           Visualiza la salud financiera del taller a lo largo del tiempo.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4">
           {/* Col 1: Tendencia */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5">
-            <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Tendencia del período</p>
-            <p className="text-xs text-gray-400 mb-3">
+          <div className="bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl p-5">
+            <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-1">Tendencia del período</p>
+            <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mb-3">
               Ingresos · Egresos · Flujo libre — por {agg === 'dia' ? 'día' : agg}
             </p>
             <PulsoTendencia data={tendencia} hideLegend />
             {/* Leyenda manual */}
             <div className="flex gap-5 mt-3">
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-0.5 rounded-full" style={{ background: '#1a1814' }} />
-                <span className="text-xs text-gray-400">Ingresos</span>
+                <div className="w-4 h-0.5 rounded-full" style={{ background: 'var(--taller-ink)' }} />
+                <span className="text-xs text-gray-400 dark:text-[var(--taller-muted)]">Ingresos</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-0.5 rounded-full border-t border-dashed" style={{ borderColor: '#97928a' }} />
-                <span className="text-xs text-gray-400">Egresos</span>
+                <div className="w-4 h-0.5 rounded-full border-t border-dashed" style={{ borderColor: 'var(--taller-muted)' }} />
+                <span className="text-xs text-gray-400 dark:text-[var(--taller-muted)]">Egresos</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-0.5 rounded-full" style={{ background: '#2d6a4f' }} />
-                <span className="text-xs text-gray-400">Flujo libre</span>
+                <span className="text-xs text-gray-400 dark:text-[var(--taller-muted)]">Flujo libre</span>
               </div>
             </div>
-            <p className="text-xs text-gray-400 italic mt-3">
+            <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-3">
               Si las líneas se cruzan, el taller opera en pérdida ese día.
             </p>
           </div>
 
           {/* Col 2: ¿En qué se va el dinero? */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 overflow-auto">
-            <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">¿En qué se va el dinero?</p>
-            <p className="text-xs text-gray-400 mb-4">Gastos como % de ingresos</p>
+          <div className="bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl p-5 overflow-auto">
+            <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-1">¿En qué se va el dinero?</p>
+            <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mb-4">Gastos como % de ingresos</p>
 
             <div className="flex flex-col gap-4">
               {gastosHierarchy.map(g => (
                 <div key={g.grupo}>
                   {/* Group header */}
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="flex-1 text-xs font-semibold uppercase tracking-wide text-gray-900">
+                    <span className="flex-1 text-xs font-semibold uppercase tracking-wide text-gray-900 dark:text-[var(--taller-ink)]">
                       {g.grupo}
                     </span>
-                    <span className="text-xs font-semibold text-gray-900 whitespace-nowrap">
+                    <span className="text-xs font-semibold text-gray-900 dark:text-[var(--taller-ink)] whitespace-nowrap">
                       {g.pct.toFixed(1)}%
                     </span>
-                    <span className="text-xs text-gray-400 whitespace-nowrap min-w-[70px] text-right">
+                    <span className="text-xs text-gray-400 dark:text-[var(--taller-muted)] whitespace-nowrap min-w-[70px] text-right">
                       {fmtMoney(g.monto)}
                     </span>
                   </div>
-                  <div className="bg-gray-100 rounded h-[3px] mb-2">
+                  <div className="bg-gray-100 dark:bg-[var(--taller-progress-bg)] rounded h-[3px] mb-2">
                     <div
                       className="rounded h-[3px]"
                       style={{ background: '#dc2626', width: `${Math.min(g.pct, 100)}%` }}
@@ -621,12 +644,12 @@ export default async function PulsoPage({
                     return (
                       <div key={c.categoria} className="pl-4 mb-1">
                         <div className="flex items-center gap-2">
-                          <span className="flex-1 text-xs text-gray-400">{c.categoria}</span>
-                          <span className="text-xs text-gray-400 whitespace-nowrap min-w-[70px] text-right">
+                          <span className="flex-1 text-xs text-gray-400 dark:text-[var(--taller-muted)]">{c.categoria}</span>
+                          <span className="text-xs text-gray-400 dark:text-[var(--taller-muted)] whitespace-nowrap min-w-[70px] text-right">
                             {fmtMoney(c.total)}
                           </span>
                         </div>
-                        <div className="bg-gray-100 rounded h-[2px] mt-0.5">
+                        <div className="bg-gray-100 dark:bg-[var(--taller-progress-bg)] rounded h-[2px] mt-0.5">
                           <div
                             className="rounded h-[2px]"
                             style={{ background: 'rgba(220,38,38,0.4)', width: `${Math.min(catPct, 100)}%` }}
@@ -644,31 +667,31 @@ export default async function PulsoPage({
 
       {/* ═══════ SECCIÓN 5 — ¿Los costos son estructuralmente sanos? ═══════ */}
       <div className="mb-6">
-        <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium mb-1">
+        <h2 className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] font-medium mb-1">
           ¿Los costos son estructuralmente sanos?
         </h2>
-        <p className="text-xs text-gray-400 italic mb-4">
+        <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mb-4">
           Si los costos superan el 65% de los ingresos, el margen se comprime estructuralmente.
         </p>
 
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl overflow-hidden">
           <div className="taller-table-wrap">
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                  <th className="text-left px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[var(--taller-muted)] border-b-2 border-gray-200 dark:border-[var(--taller-border)]">
                     Categoría
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[var(--taller-muted)] border-b-2 border-gray-200 dark:border-[var(--taller-border)]">
                     Monto
                   </th>
-                  <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200 w-[30%]">
+                  <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[var(--taller-muted)] border-b-2 border-gray-200 dark:border-[var(--taller-border)] w-[30%]">
                     &nbsp;
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[var(--taller-muted)] border-b-2 border-gray-200 dark:border-[var(--taller-border)]">
                     % ingreso
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[var(--taller-muted)] border-b-2 border-gray-200 dark:border-[var(--taller-border)]">
                     Objetivo
                   </th>
                 </tr>
@@ -679,22 +702,22 @@ export default async function PulsoPage({
                   const color = costColor(pct, row.target)
                   return (
                     <tr key={row.name}>
-                      <td className="px-4 py-3 text-xs text-gray-900 border-b border-gray-100">{row.name}</td>
-                      <td className="px-4 py-3 text-xs text-gray-900 text-right border-b border-gray-100">
+                      <td className="px-4 py-3 text-xs text-gray-900 dark:text-[var(--taller-ink)] border-b border-gray-100 dark:border-[var(--taller-border)]/50">{row.name}</td>
+                      <td className="px-4 py-3 text-xs text-gray-900 dark:text-[var(--taller-ink)] text-right border-b border-gray-100 dark:border-[var(--taller-border)]/50">
                         {fmtMoney(row.value)}
                       </td>
-                      <td className="px-4 py-3 border-b border-gray-100">
-                        <div className="bg-gray-100 rounded-full h-2">
+                      <td className="px-4 py-3 border-b border-gray-100 dark:border-[var(--taller-border)]/50">
+                        <div className="bg-gray-100 dark:bg-[var(--taller-progress-bg)] rounded-full h-2">
                           <div
                             className="h-2 rounded-full transition-all"
                             style={{ width: `${Math.min(pct, 100)}%`, background: color }}
                           />
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-right font-semibold border-b border-gray-100" style={{ color }}>
+                      <td className="px-4 py-3 text-xs text-right font-semibold border-b border-gray-100 dark:border-[var(--taller-border)]/50" style={{ color }}>
                         {pct.toFixed(1)}%
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-400 text-right border-b border-gray-100">
+                      <td className="px-4 py-3 text-xs text-gray-400 dark:text-[var(--taller-muted)] text-right border-b border-gray-100 dark:border-[var(--taller-border)]/50">
                         &lt;{row.target}%
                       </td>
                     </tr>
@@ -702,12 +725,12 @@ export default async function PulsoPage({
                 })}
                 {/* Total row */}
                 <tr>
-                  <td className="px-4 py-3 text-xs font-bold text-gray-900 border-t-2 border-gray-300">Total costos</td>
-                  <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                  <td className="px-4 py-3 text-xs font-bold text-gray-900 dark:text-[var(--taller-ink)] border-t-2 border-gray-300 dark:border-[var(--taller-border)]">Total costos</td>
+                  <td className="px-4 py-3 text-xs font-bold text-gray-900 dark:text-[var(--taller-ink)] text-right border-t-2 border-gray-300 dark:border-[var(--taller-border)]">
                     {fmtMoney(totalCostValue)}
                   </td>
-                  <td className="px-4 py-3 border-t-2 border-gray-300">
-                    <div className="bg-gray-100 rounded-full h-2">
+                  <td className="px-4 py-3 border-t-2 border-gray-300 dark:border-[var(--taller-border)]">
+                    <div className="bg-gray-100 dark:bg-[var(--taller-progress-bg)] rounded-full h-2">
                       <div
                         className="h-2 rounded-full transition-all"
                         style={{
@@ -718,12 +741,12 @@ export default async function PulsoPage({
                     </div>
                   </td>
                   <td
-                    className="px-4 py-3 text-xs text-right font-bold border-t-2 border-gray-300"
+                    className="px-4 py-3 text-xs text-right font-bold border-t-2 border-gray-300 dark:border-[var(--taller-border)]"
                     style={{ color: costColor(totalCostPct, 65) }}
                   >
                     {totalCostPct.toFixed(1)}%
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-400 text-right border-t-2 border-gray-300">
+                  <td className="px-4 py-3 text-xs text-gray-400 dark:text-[var(--taller-muted)] text-right border-t-2 border-gray-300 dark:border-[var(--taller-border)]">
                     &lt;65%
                   </td>
                 </tr>
@@ -735,40 +758,40 @@ export default async function PulsoPage({
 
       {/* ═══════ SECCIÓN 6 — ¿Cada mecánico genera más de lo que cuesta? ═══════ */}
       <div className="mb-6">
-        <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium mb-1">
+        <h2 className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] font-medium mb-1">
           ¿Cada mecánico genera más de lo que cuesta?
         </h2>
-        <p className="text-xs text-gray-400 italic mb-4">
+        <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mb-4">
           El equipo es el negocio. Si un mecánico no es rentable, hay que actuar.
         </p>
 
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl overflow-hidden">
           <div className="taller-table-wrap">
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                  <th className="text-left px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[var(--taller-muted)] border-b-2 border-gray-200 dark:border-[var(--taller-border)]">
                     Mecánico
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[var(--taller-muted)] border-b-2 border-gray-200 dark:border-[var(--taller-border)]">
                     Servicios
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[var(--taller-muted)] border-b-2 border-gray-200 dark:border-[var(--taller-border)]">
                     MO generada
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[var(--taller-muted)] border-b-2 border-gray-200 dark:border-[var(--taller-border)]">
                     Comisión
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[var(--taller-muted)] border-b-2 border-gray-200 dark:border-[var(--taller-border)]">
                     Sueldo
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[var(--taller-muted)] border-b-2 border-gray-200 dark:border-[var(--taller-border)]">
                     Costo total
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[var(--taller-muted)] border-b-2 border-gray-200 dark:border-[var(--taller-border)]">
                     Utilidad
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 border-b-2 border-gray-200">
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[var(--taller-muted)] border-b-2 border-gray-200 dark:border-[var(--taller-border)]">
                     ROI
                   </th>
                 </tr>
@@ -776,14 +799,14 @@ export default async function PulsoPage({
               <tbody>
                 {mecanicos.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-6 text-center text-xs text-gray-400">
+                    <td colSpan={8} className="px-4 py-6 text-center text-xs text-gray-400 dark:text-[var(--taller-muted)]">
                       Sin datos de mecánicos en este período
                     </td>
                   </tr>
                 )}
                 {mecanicos.map(mec => (
                   <tr key={mec.nombre}>
-                    <td className="px-4 py-3 text-xs text-gray-900 border-b border-gray-100">
+                    <td className="px-4 py-3 text-xs text-gray-900 dark:text-[var(--taller-ink)] border-b border-gray-100 dark:border-[var(--taller-border)]/50">
                       <div className="flex items-center gap-2">
                         <div
                           className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shrink-0"
@@ -794,25 +817,25 @@ export default async function PulsoPage({
                         {mec.nombre}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-900 text-right border-b border-gray-100">
+                    <td className="px-4 py-3 text-xs text-gray-900 dark:text-[var(--taller-ink)] text-right border-b border-gray-100 dark:border-[var(--taller-border)]/50">
                       {mec.servicios}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-900 text-right border-b border-gray-100">
+                    <td className="px-4 py-3 text-xs text-gray-900 dark:text-[var(--taller-ink)] text-right border-b border-gray-100 dark:border-[var(--taller-border)]/50">
                       {fmtMoney(mec.mo)}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-900 text-right border-b border-gray-100">
+                    <td className="px-4 py-3 text-xs text-gray-900 dark:text-[var(--taller-ink)] text-right border-b border-gray-100 dark:border-[var(--taller-border)]/50">
                       {fmtMoney(mec.comisiones)}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-900 text-right border-b border-gray-100">
+                    <td className="px-4 py-3 text-xs text-gray-900 dark:text-[var(--taller-ink)] text-right border-b border-gray-100 dark:border-[var(--taller-border)]/50">
                       {fmtMoney(mec.sueldo)}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-900 text-right border-b border-gray-100">
+                    <td className="px-4 py-3 text-xs text-gray-900 dark:text-[var(--taller-ink)] text-right border-b border-gray-100 dark:border-[var(--taller-border)]/50">
                       {fmtMoney(mec.costoTotal)}
                     </td>
-                    <td className="px-4 py-3 text-xs text-right font-semibold border-b border-gray-100" style={{ color: '#0070f3' }}>
+                    <td className="px-4 py-3 text-xs text-right font-semibold border-b border-gray-100 dark:border-[var(--taller-border)]/50" style={{ color: '#0070f3' }}>
                       {fmtMoney(mec.utilidad)}
                     </td>
-                    <td className="px-4 py-3 text-right border-b border-gray-100">
+                    <td className="px-4 py-3 text-right border-b border-gray-100 dark:border-[var(--taller-border)]/50">
                       <span
                         className="inline-block px-2 py-0.5 rounded text-xs font-semibold text-white"
                         style={{ background: roiBadgeColor(mec.roi) }}
@@ -824,26 +847,26 @@ export default async function PulsoPage({
                 ))}
                 {mecanicos.length > 0 && (
                   <tr>
-                    <td className="px-4 py-3 text-xs font-bold text-gray-900 border-t-2 border-gray-300">Total</td>
-                    <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 dark:text-[var(--taller-ink)] border-t-2 border-gray-300 dark:border-[var(--taller-border)]">Total</td>
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 dark:text-[var(--taller-ink)] text-right border-t-2 border-gray-300 dark:border-[var(--taller-border)]">
                       {totMec.servicios}
                     </td>
-                    <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 dark:text-[var(--taller-ink)] text-right border-t-2 border-gray-300 dark:border-[var(--taller-border)]">
                       {fmtMoney(totMec.mo)}
                     </td>
-                    <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 dark:text-[var(--taller-ink)] text-right border-t-2 border-gray-300 dark:border-[var(--taller-border)]">
                       {fmtMoney(totMec.comisiones)}
                     </td>
-                    <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 dark:text-[var(--taller-ink)] text-right border-t-2 border-gray-300 dark:border-[var(--taller-border)]">
                       {fmtMoney(totMec.sueldo)}
                     </td>
-                    <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 dark:text-[var(--taller-ink)] text-right border-t-2 border-gray-300 dark:border-[var(--taller-border)]">
                       {fmtMoney(totMec.costoTotal)}
                     </td>
-                    <td className="px-4 py-3 text-xs font-bold text-right border-t-2 border-gray-300" style={{ color: '#0070f3' }}>
+                    <td className="px-4 py-3 text-xs font-bold text-right border-t-2 border-gray-300 dark:border-[var(--taller-border)]" style={{ color: '#0070f3' }}>
                       {fmtMoney(totMec.utilidad)}
                     </td>
-                    <td className="px-4 py-3 text-xs font-bold text-gray-900 text-right border-t-2 border-gray-300">
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900 dark:text-[var(--taller-ink)] text-right border-t-2 border-gray-300 dark:border-[var(--taller-border)]">
                       <span
                         className="inline-block px-2 py-0.5 rounded text-xs font-semibold text-white"
                         style={{ background: roiBadgeColor(totRoi) }}
@@ -858,7 +881,7 @@ export default async function PulsoPage({
           </div>
         </div>
 
-        <p className="text-xs text-gray-400 italic mt-3">
+        <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-3">
           ROI = MO generada ÷ costo total. Un mecánico con ROI &lt;1.5x necesita más servicios o menor costo.
         </p>
       </div>

@@ -1,9 +1,10 @@
 'use client'
 
 import ReactECharts from 'echarts-for-react'
-import { PRIMARY, BORDER, INK, FONT } from '../chartColors'
+import { PRIMARY, FONT } from '../chartColors'
 import { fmtAxisCount } from '../utils'
 import { useChartResize } from '../useChartResize'
+import { useChartColors } from '../useChartColors'
 
 interface Props {
   data: { dia: string; total: number; cobrados: number }[]
@@ -11,12 +12,13 @@ interface Props {
 
 export default function ServiciosDiarios({ data }: Props) {
   const { containerRef, chartRef } = useChartResize()
+  const { ink, border } = useChartColors()
   const option = {
     tooltip: {
       trigger: 'axis',
-      backgroundColor: '#fff',
-      borderColor: BORDER,
-      textStyle: { fontFamily: FONT, fontSize: 11, color: INK },
+      backgroundColor: 'transparent',
+      borderColor: border,
+      textStyle: { fontFamily: FONT, fontSize: 11, color: ink },
       formatter: (params: any) => {
         const p = params[0]
         return p ? `<b>${p.axisValue}</b><br/>${p.marker} Cobrados: ${p.value}` : ''
@@ -26,15 +28,15 @@ export default function ServiciosDiarios({ data }: Props) {
     xAxis: {
       type: 'category',
       data: data.map((d) => d.dia),
-      axisLabel: { fontFamily: FONT, fontSize: 10, color: INK },
-      axisLine: { lineStyle: { color: BORDER } },
+      axisLabel: { fontFamily: FONT, fontSize: 10, color: ink },
+      axisLine: { lineStyle: { color: border } },
       axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
       minInterval: 1,
-      axisLabel: { fontFamily: FONT, fontSize: 10, color: INK, formatter: (v: number) => fmtAxisCount(v) },
-      splitLine: { lineStyle: { color: BORDER, type: 'dashed' } },
+      axisLabel: { fontFamily: FONT, fontSize: 10, color: ink, formatter: (v: number) => fmtAxisCount(v) },
+      splitLine: { lineStyle: { color: border, type: 'dashed' } },
     },
     series: [
       {
@@ -48,7 +50,7 @@ export default function ServiciosDiarios({ data }: Props) {
           position: 'top',
           fontFamily: FONT,
           fontSize: 9,
-          color: INK,
+          color: ink,
           formatter: (p: any) => (p.value > 0 ? String(p.value) : ''),
         },
       },

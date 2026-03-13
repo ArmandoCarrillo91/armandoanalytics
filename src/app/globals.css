@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* Dark (login) */
+  /* ── Login (always dark) ── */
   --bg: #080808;
   --surface: rgba(255,255,255,0.03);
   --border-dark: rgba(255,255,255,0.07);
@@ -11,14 +11,64 @@
   --text-secondary: rgba(255,255,255,0.40);
   --text-dim: rgba(255,255,255,0.18);
 
-  /* Light (system) */
+  /* ── System palette (light) ── */
   --bg-light: #FFFFFF;
   --bg-canvas: #FAFAFA;
+  --bg-hover: #F4F4F5;
+  --bg-elevated: #FFFFFF;
+  --bg-inset: #F9FAFB;
   --border-light: #EAEAEA;
   --text-black: #111111;
   --text-gray: #6B7280;
   --text-muted: #A1A1AA;
   --accent: #0070F3;
+
+  /* ── Hero card ── */
+  --hero-bg: #111111;
+
+  /* ── Semantic feedback ── */
+  --success-bg: #ECFDF5;
+  --success-fg: #065F46;
+  --success-border: #bbf7d0;
+  --error-bg: #FEF2F2;
+  --error-fg: #991B1B;
+  --error-border: #fecaca;
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+
+  /* ── Shadow ── */
+  --shadow-popover: 0 4px 12px rgba(0,0,0,0.1);
+  --shadow-modal: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+.dark {
+  /* ── System palette (dark) ── */
+  --bg-light: #0C0C0C;
+  --bg-canvas: #111111;
+  --bg-hover: rgba(255,255,255,0.06);
+  --bg-elevated: #1a1a1a;
+  --bg-inset: rgba(255,255,255,0.05);
+  --border-light: rgba(255,255,255,0.10);
+  --text-black: rgba(255,255,255,0.95);
+  --text-gray: rgba(255,255,255,0.60);
+  --text-muted: rgba(255,255,255,0.35);
+
+  /* ── Hero card ── */
+  --hero-bg: #1e1e1e;
+
+  /* ── Semantic feedback ── */
+  --success-bg: rgba(16, 185, 129, 0.10);
+  --success-fg: #6ee7b7;
+  --success-border: rgba(16, 185, 129, 0.20);
+  --error-bg: rgba(239, 68, 68, 0.10);
+  --error-fg: #fca5a5;
+  --error-border: rgba(239, 68, 68, 0.20);
+  --warning-bg: rgba(245, 158, 11, 0.10);
+  --warning-border: rgba(245, 158, 11, 0.20);
+
+  /* ── Shadow ── */
+  --shadow-popover: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-modal: 0 8px 30px rgba(0,0,0,0.5);
 }
 
 * {
@@ -38,6 +88,10 @@ body {
 .dot-grid {
   background-image: radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
   background-size: 24px 24px;
+}
+
+.dark .dot-grid {
+  background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
 }
 
 @keyframes pulse {

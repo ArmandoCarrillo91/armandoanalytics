@@ -1,9 +1,10 @@
 'use client'
 
 import ReactECharts from 'echarts-for-react'
-import { NEGATIVE, WARNING, NEUTRAL, PRIMARY, BORDER, INK, FONT } from '../chartColors'
+import { NEGATIVE, WARNING, NEUTRAL, PRIMARY, FONT } from '../chartColors'
 import { fmtMoney } from '../utils'
 import { useChartResize } from '../useChartResize'
+import { useChartColors } from '../useChartColors'
 
 interface Props {
   data: { grupo: string; total: number }[]
@@ -13,20 +14,21 @@ const PALETTE = [NEGATIVE, WARNING, NEUTRAL, PRIMARY]
 
 export default function CostoPesoDonut({ data }: Props) {
   const { containerRef, chartRef } = useChartResize()
+  const { ink, border } = useChartColors()
   const filtered = data.filter((d) => d.total > 0)
 
   const option = {
     tooltip: {
       trigger: 'item',
-      backgroundColor: '#fff',
-      borderColor: BORDER,
-      textStyle: { fontFamily: FONT, fontSize: 11, color: INK },
+      backgroundColor: 'transparent',
+      borderColor: border,
+      textStyle: { fontFamily: FONT, fontSize: 11, color: ink },
       formatter: (p: any) => `${p.marker} ${p.name}: ${fmtMoney(p.value)} (${p.percent}%)`,
     },
     legend: {
       orient: 'horizontal' as const,
       bottom: 0,
-      textStyle: { fontFamily: FONT, fontSize: 10, color: INK },
+      textStyle: { fontFamily: FONT, fontSize: 10, color: ink },
       itemWidth: 12,
       itemHeight: 8,
     },

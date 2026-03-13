@@ -1,9 +1,10 @@
 'use client'
 
 import ReactECharts from 'echarts-for-react'
-import { NEUTRAL, BORDER, INK, FONT } from '../chartColors'
+import { NEUTRAL, FONT } from '../chartColors'
 import { fmtAxisCount } from '../utils'
 import { useChartResize } from '../useChartResize'
+import { useChartColors } from '../useChartColors'
 
 interface Props {
   data: { nombre: string; servicios: number }[]
@@ -11,28 +12,29 @@ interface Props {
 
 export default function ServiciosMecanico({ data }: Props) {
   const { containerRef, chartRef } = useChartResize()
+  const { ink, border } = useChartColors()
   const sorted = [...data].sort((a, b) => a.servicios - b.servicios)
 
   const option = {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      backgroundColor: '#fff',
-      borderColor: BORDER,
-      textStyle: { fontFamily: FONT, fontSize: 11, color: INK },
+      backgroundColor: 'transparent',
+      borderColor: border,
+      textStyle: { fontFamily: FONT, fontSize: 11, color: ink },
     },
     grid: { left: 10, right: 10, top: 30, bottom: 30, containLabel: true },
     xAxis: {
       type: 'value',
       minInterval: 1,
-      axisLabel: { fontFamily: FONT, fontSize: 10, color: INK, formatter: (v: number) => fmtAxisCount(v) },
-      splitLine: { lineStyle: { color: BORDER, type: 'dashed' } },
+      axisLabel: { fontFamily: FONT, fontSize: 10, color: ink, formatter: (v: number) => fmtAxisCount(v) },
+      splitLine: { lineStyle: { color: border, type: 'dashed' } },
     },
     yAxis: {
       type: 'category',
       data: sorted.map((d) => d.nombre),
-      axisLabel: { fontFamily: FONT, fontSize: 10, color: INK },
-      axisLine: { lineStyle: { color: BORDER } },
+      axisLabel: { fontFamily: FONT, fontSize: 10, color: ink },
+      axisLine: { lineStyle: { color: border } },
       axisTick: { show: false },
     },
     series: [

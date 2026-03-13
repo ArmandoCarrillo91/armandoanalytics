@@ -1,3 +1,36 @@
+/* ── Taller Theme Variables ── */
+
+.taller-shell {
+  --taller-bg: #f4f2ed;
+  --taller-surface: #ffffff;
+  --taller-border: #e5e1d8;
+  --taller-ink: #1a1814;
+  --taller-green: #2d6a4f;
+  --taller-red: #c94a4a;
+  --taller-amber: #c9942a;
+  --taller-blue: #0070f3;
+  --taller-blue-l: #eff6ff;
+  --taller-blue-m: #3b82f6;
+  --taller-muted: #97928a;
+  --taller-font-m: 'IBM Plex Mono', monospace;
+  --taller-font-d: 'Lora', serif;
+  --taller-progress-bg: #f0ece4;
+  --taller-hero-bg: #111111;
+  --taller-hero-text: #ffffff;
+}
+
+.dark .taller-shell {
+  --taller-bg: #0C0C0C;
+  --taller-surface: #1a1a1a;
+  --taller-border: rgba(255,255,255,0.10);
+  --taller-ink: rgba(255,255,255,0.95);
+  --taller-muted: rgba(255,255,255,0.40);
+  --taller-blue-l: rgba(0, 112, 243, 0.10);
+  --taller-progress-bg: rgba(255,255,255,0.06);
+  --taller-hero-bg: #1e1e1e;
+  --taller-hero-text: #ffffff;
+}
+
 /* ── Taller Responsive ── */
 
 /* Shell */

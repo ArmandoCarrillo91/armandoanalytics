@@ -1,9 +1,10 @@
 'use client'
 
 import ReactECharts from 'echarts-for-react'
-import { PRIMARY, NEUTRAL, BORDER, INK, FONT } from '../chartColors'
+import { PRIMARY, NEUTRAL, FONT } from '../chartColors'
 import { fmtMoney } from '../utils'
 import { useChartResize } from '../useChartResize'
+import { useChartColors } from '../useChartColors'
 
 interface Props {
   mo: number
@@ -12,17 +13,18 @@ interface Props {
 
 export default function ComposicionIngreso({ mo, partes }: Props) {
   const { containerRef, chartRef } = useChartResize()
+  const { ink, border } = useChartColors()
   const option = {
     tooltip: {
       trigger: 'item',
-      backgroundColor: '#fff',
-      borderColor: BORDER,
-      textStyle: { fontFamily: FONT, fontSize: 11, color: INK },
+      backgroundColor: 'transparent',
+      borderColor: border,
+      textStyle: { fontFamily: FONT, fontSize: 11, color: ink },
       formatter: (p: any) => `${p.marker} ${p.name}: ${fmtMoney(p.value)}`,
     },
     legend: {
       bottom: 0,
-      textStyle: { fontFamily: FONT, fontSize: 10, color: INK },
+      textStyle: { fontFamily: FONT, fontSize: 10, color: ink },
       itemWidth: 12,
       itemHeight: 8,
     },

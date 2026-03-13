@@ -1,9 +1,10 @@
 'use client'
 
 import ReactECharts from 'echarts-for-react'
-import { PRIMARY, NEGATIVE, WARNING, NEUTRAL, BORDER, INK, FONT } from '../chartColors'
+import { PRIMARY, NEGATIVE, WARNING, NEUTRAL, FONT } from '../chartColors'
 import { fmtMoney } from '../utils'
 import { useChartResize } from '../useChartResize'
+import { useChartColors } from '../useChartColors'
 
 interface Props {
   data: { categoria: string; total: number }[]
@@ -13,13 +14,14 @@ const PALETTE = [NEGATIVE, WARNING, PRIMARY, NEUTRAL, '#c4b5a0']
 
 export default function GastosCategoria({ data }: Props) {
   const { containerRef, chartRef } = useChartResize()
+  const { ink, border } = useChartColors()
   const total = data.reduce((s, d) => s + d.total, 0)
 
   const option = {
     tooltip: {
-      backgroundColor: '#fff',
-      borderColor: BORDER,
-      textStyle: { fontFamily: FONT, fontSize: 11, color: INK },
+      backgroundColor: 'transparent',
+      borderColor: border,
+      textStyle: { fontFamily: FONT, fontSize: 11, color: ink },
       formatter: (p: any) => {
         const pct = total > 0 ? ((p.value / total) * 100).toFixed(1) : '0.0'
         return `${p.name}<br/>${fmtMoney(p.value)} (${pct}%)`

@@ -42,7 +42,7 @@ export default function PublicDashboard({ dashboard }: PublicDashboardProps) {
         style={{
           fontSize: '24px',
           fontWeight: 700,
-          color: '#111',
+          color: 'var(--text-black)',
           marginBottom: '8px',
         }}
       >
@@ -52,7 +52,7 @@ export default function PublicDashboard({ dashboard }: PublicDashboardProps) {
         <p
           style={{
             fontSize: '14px',
-            color: '#6B7280',
+            color: 'var(--text-gray)',
             marginBottom: '32px',
           }}
         >
@@ -65,7 +65,7 @@ export default function PublicDashboard({ dashboard }: PublicDashboardProps) {
           style={{
             textAlign: 'center',
             padding: '64px 0',
-            color: '#9CA3AF',
+            color: 'var(--text-muted)',
             fontSize: '14px',
           }}
         >
@@ -84,8 +84,8 @@ export default function PublicDashboard({ dashboard }: PublicDashboardProps) {
               key={chart.id}
               style={{
                 gridColumn: `span ${chart.width}`,
-                background: 'white',
-                border: '1px solid #E5E7EB',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-light)',
                 borderRadius: '8px',
                 padding: '16px',
                 minHeight: `${chart.height * 60}px`,
@@ -95,7 +95,7 @@ export default function PublicDashboard({ dashboard }: PublicDashboardProps) {
                 style={{
                   fontSize: '13px',
                   fontWeight: 600,
-                  color: '#111',
+                  color: 'var(--text-black)',
                   marginBottom: '4px',
                 }}
               >
@@ -105,7 +105,7 @@ export default function PublicDashboard({ dashboard }: PublicDashboardProps) {
                 <div
                   style={{
                     fontSize: '11px',
-                    color: '#9CA3AF',
+                    color: 'var(--text-muted)',
                     marginBottom: '12px',
                   }}
                 >
@@ -126,7 +126,7 @@ export default function PublicDashboard({ dashboard }: PublicDashboardProps) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     height: '120px',
-                    color: '#D1D5DB',
+                    color: 'var(--text-muted)',
                     fontSize: '12px',
                   }}
                 >

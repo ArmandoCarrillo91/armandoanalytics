@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import InviteUserModal from '@/components/InviteUserModal'
+import TallerThemeToggle from './TallerThemeToggle'
 
 const NAV_ITEMS = [
   { label: 'Pulso', href: '/dashboard/taller/pulso', icon: '♡' },
@@ -220,6 +221,8 @@ export default function TallerSidebar({ onNavigate, otherTenants = [], isPlatfor
             taller · en línea
           </span>
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <TallerThemeToggle />
         <button
           onClick={handleLogout}
           title="Cerrar sesión"
@@ -243,6 +246,7 @@ export default function TallerSidebar({ onNavigate, otherTenants = [], isPlatfor
             <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
         </button>
+        </div>
       </div>
       {showInvite && <InviteUserModal onClose={() => setShowInvite(false)} />}
     </div>

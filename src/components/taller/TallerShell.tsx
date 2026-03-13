@@ -7,24 +7,7 @@ export default function TallerShell({ children, otherTenants = [], isPlatformAdm
   const [open, setOpen] = useState(false)
 
   return (
-    <div
-      className="taller-shell"
-      style={{
-        '--taller-bg': '#f4f2ed',
-        '--taller-surface': '#ffffff',
-        '--taller-border': '#e5e1d8',
-        '--taller-ink': '#1a1814',
-        '--taller-green': '#2d6a4f',
-        '--taller-red': '#c94a4a',
-        '--taller-amber': '#c9942a',
-        '--taller-blue': '#0070f3',
-        '--taller-blue-l': '#eff6ff',
-        '--taller-blue-m': '#3b82f6',
-        '--taller-muted': '#97928a',
-        '--taller-font-m': "'IBM Plex Mono', monospace",
-        '--taller-font-d': "'Lora', serif",
-      } as React.CSSProperties}
-    >
+    <div className="taller-shell">
       {/* Mobile overlay */}
       <div
         className={`taller-overlay${open ? ' open' : ''}`}

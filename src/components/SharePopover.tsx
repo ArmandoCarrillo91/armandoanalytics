@@ -95,9 +95,9 @@ export default function SharePopover({
           padding: '4px 10px',
           fontSize: '12px',
           background: 'transparent',
-          border: '1px solid #E5E7EB',
+          border: '1px solid var(--border-light)',
           borderRadius: '4px',
-          color: '#6B7280',
+          color: 'var(--text-gray)',
           cursor: 'pointer',
         }}
       >
@@ -113,10 +113,10 @@ export default function SharePopover({
             right: 0,
             marginTop: '4px',
             width: '320px',
-            background: 'white',
-            border: '1px solid #E5E7EB',
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-light)',
             borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            boxShadow: 'var(--shadow-popover)',
             padding: '16px',
             zIndex: 50,
           }}
@@ -126,7 +126,7 @@ export default function SharePopover({
               fontSize: '13px',
               fontWeight: 600,
               marginBottom: '12px',
-              color: '#111',
+              color: 'var(--text-black)',
             }}
           >
             Compartir &ldquo;{dashboardName}&rdquo;
@@ -141,7 +141,7 @@ export default function SharePopover({
               marginBottom: '12px',
             }}
           >
-            <span style={{ fontSize: '12px', color: '#6B7280' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-gray)' }}>
               Link p&uacute;blico
             </span>
             <button
@@ -152,7 +152,7 @@ export default function SharePopover({
                 height: '22px',
                 borderRadius: '11px',
                 border: 'none',
-                background: isPublic ? '#10B981' : '#D1D5DB',
+                background: isPublic ? '#10B981' : 'var(--text-muted)',
                 cursor: loading ? 'not-allowed' : 'pointer',
                 position: 'relative',
                 transition: 'background 0.2s',
@@ -180,11 +180,11 @@ export default function SharePopover({
               <div
                 style={{
                   padding: '8px 10px',
-                  background: '#F9FAFB',
-                  border: '1px solid #E5E7EB',
+                  background: 'var(--bg-inset)',
+                  border: '1px solid var(--border-light)',
                   borderRadius: '6px',
                   fontSize: '11px',
-                  color: '#374151',
+                  color: 'var(--text-gray)',
                   wordBreak: 'break-all',
                   marginBottom: '8px',
                 }}
@@ -197,7 +197,7 @@ export default function SharePopover({
                 <div
                   style={{
                     fontSize: '11px',
-                    color: new Date(expiresAt) < new Date() ? '#EF4444' : '#6B7280',
+                    color: new Date(expiresAt) < new Date() ? '#EF4444' : 'var(--text-gray)',
                     marginBottom: '8px',
                   }}
                 >
@@ -215,8 +215,8 @@ export default function SharePopover({
                     padding: '6px 12px',
                     fontSize: '12px',
                     fontWeight: 500,
-                    background: '#111',
-                    color: 'white',
+                    background: 'var(--text-black)',
+                    color: 'var(--bg-light)',
                     border: 'none',
                     borderRadius: '6px',
                     cursor: 'pointer',
@@ -232,8 +232,8 @@ export default function SharePopover({
                     fontSize: '12px',
                     fontWeight: 500,
                     background: 'transparent',
-                    color: '#111',
-                    border: '1px solid #E5E7EB',
+                    color: 'var(--text-black)',
+                    border: '1px solid var(--border-light)',
                     borderRadius: '6px',
                     cursor: loading ? 'not-allowed' : 'pointer',
                   }}

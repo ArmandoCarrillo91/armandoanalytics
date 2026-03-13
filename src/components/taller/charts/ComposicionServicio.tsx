@@ -1,9 +1,10 @@
 'use client'
 
 import ReactECharts from 'echarts-for-react'
-import { PRIMARY, NEUTRAL, BORDER, INK, FONT } from '../chartColors'
+import { PRIMARY, NEUTRAL, FONT } from '../chartColors'
 import { fmtMoney, fmtAxis } from '../utils'
 import { useChartResize } from '../useChartResize'
+import { useChartColors } from '../useChartColors'
 
 const VERDE = '#86efac'
 
@@ -13,12 +14,13 @@ interface Props {
 
 export default function ComposicionServicio({ data }: Props) {
   const { containerRef, chartRef } = useChartResize()
+  const { ink, border } = useChartColors()
   const option = {
     tooltip: {
       trigger: 'axis',
-      backgroundColor: '#fff',
-      borderColor: BORDER,
-      textStyle: { fontFamily: FONT, fontSize: 11, color: INK },
+      backgroundColor: 'transparent',
+      borderColor: border,
+      textStyle: { fontFamily: FONT, fontSize: 11, color: ink },
       formatter: (params: any) => {
         let r = `<b>${params[0]?.axisValue || ''}</b>`
         let total = 0
@@ -33,7 +35,7 @@ export default function ComposicionServicio({ data }: Props) {
     },
     legend: {
       bottom: 0,
-      textStyle: { fontFamily: FONT, fontSize: 10, color: INK },
+      textStyle: { fontFamily: FONT, fontSize: 10, color: ink },
       itemWidth: 12,
       itemHeight: 8,
     },
@@ -41,14 +43,14 @@ export default function ComposicionServicio({ data }: Props) {
     xAxis: {
       type: 'category',
       data: data.map((d) => d.semana),
-      axisLabel: { fontFamily: FONT, fontSize: 10, color: INK },
-      axisLine: { lineStyle: { color: BORDER } },
+      axisLabel: { fontFamily: FONT, fontSize: 10, color: ink },
+      axisLine: { lineStyle: { color: border } },
       axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
-      axisLabel: { fontFamily: FONT, fontSize: 10, color: INK, formatter: (v: number) => fmtAxis(v) },
-      splitLine: { lineStyle: { color: BORDER, type: 'dashed' } },
+      axisLabel: { fontFamily: FONT, fontSize: 10, color: ink, formatter: (v: number) => fmtAxis(v) },
+      splitLine: { lineStyle: { color: border, type: 'dashed' } },
     },
     series: [
       {

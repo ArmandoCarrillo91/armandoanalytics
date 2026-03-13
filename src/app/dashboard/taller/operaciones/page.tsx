@@ -30,8 +30,8 @@ function defaultDates() {
 /* ── Styles ── */
 
 const card: React.CSSProperties = {
-  background: '#ffffff',
-  border: '1px solid #e5e1d8',
+  background: 'var(--taller-surface)',
+  border: '1px solid var(--taller-border)',
   borderRadius: 10,
   padding: 20,
   display: 'flex',
@@ -43,34 +43,34 @@ const chartWrap: React.CSSProperties = { flex: 1 }
 const label: React.CSSProperties = {
   fontSize: 10,
   fontWeight: 500,
-  color: '#97928a',
+  color: 'var(--taller-muted)',
   letterSpacing: '1px',
   textTransform: 'uppercase' as const,
-  fontFamily: "'IBM Plex Mono', monospace",
+  fontFamily: 'var(--taller-font-m)',
   marginBottom: 6,
 }
 
 const kpiValue: React.CSSProperties = {
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1814',
-  fontFamily: "'IBM Plex Mono', monospace",
+  color: 'var(--taller-ink)',
+  fontFamily: 'var(--taller-font-m)',
 }
 
 const kpiSub: React.CSSProperties = {
   fontSize: 10,
-  color: '#97928a',
-  fontFamily: "'IBM Plex Mono', monospace",
+  color: 'var(--taller-muted)',
+  fontFamily: 'var(--taller-font-m)',
   marginTop: 2,
 }
 
 const sectionTitle: React.CSSProperties = {
   fontSize: 11,
   fontWeight: 500,
-  color: '#97928a',
+  color: 'var(--taller-muted)',
   letterSpacing: '1px',
   textTransform: 'uppercase' as const,
-  fontFamily: "'IBM Plex Mono', monospace",
+  fontFamily: 'var(--taller-font-m)',
   marginBottom: 8,
 }
 
@@ -98,7 +98,7 @@ export default async function OperacionesPage({
   if (error || !data) {
     return (
       <div style={{ padding: 40, textAlign: 'center' }}>
-        <p style={{ ...label, fontSize: 13, color: '#c94a4a' }}>
+        <p style={{ ...label, fontSize: 13, color: 'var(--taller-red)' }}>
           {error || 'No se pudieron cargar los datos'}
         </p>
       </div>
@@ -125,10 +125,10 @@ export default async function OperacionesPage({
       {/* Header */}
       <div className="taller-header">
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1a1814', fontFamily: "'Lora', serif", margin: 0 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--taller-ink)', fontFamily: 'var(--taller-font-d)', margin: 0 }}>
             Operaciones
           </h1>
-          <p style={{ fontSize: 12, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace", marginTop: 4 }}>
+          <p style={{ fontSize: 12, color: 'var(--taller-muted)', fontFamily: 'var(--taller-font-m)', marginTop: 4 }}>
             Vista operativa del taller
           </p>
         </div>
@@ -156,7 +156,7 @@ export default async function OperacionesPage({
         </div>
         <div style={card}>
           <div style={label}>Utilidad neta</div>
-          <div style={{ ...kpiValue, color: utilidadNeta >= 0 ? '#0070f3' : '#c94a4a' }}>
+          <div style={{ ...kpiValue, color: utilidadNeta >= 0 ? 'var(--taller-blue)' : 'var(--taller-red)' }}>
             {fmtMoney(utilidadNeta)}
           </div>
           <p style={kpiSub}>{ingresosBrutos > 0 ? ((utilidadNeta / ingresosBrutos) * 100).toFixed(1) : '0.0'}% del ingreso</p>
@@ -182,7 +182,7 @@ export default async function OperacionesPage({
         </div>
         <div style={card}>
           <div style={sectionTitle}>Costo de ventas vs ingresos</div>
-          <p style={{ fontSize: 11, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace", margin: '0 0 8px' }}>
+          <p style={{ fontSize: 11, color: 'var(--taller-muted)', fontFamily: 'var(--taller-font-m)', margin: '0 0 8px' }}>
             Por cada peso en refacciones, ¿cuánto nos quedó?
           </p>
           <div style={chartWrap}><CostoPrecioPartes data={costoPrecioData} /></div>

@@ -34,9 +34,10 @@ export default async function SharePage({
           alignItems: 'center',
           minHeight: '100vh',
           fontFamily: 'Inter, sans-serif',
+          background: 'var(--bg-canvas)',
         }}
       >
-        <p style={{ fontSize: '16px', color: '#6B7280', fontWeight: 500 }}>
+        <p style={{ fontSize: '16px', color: 'var(--text-gray)', fontWeight: 500 }}>
           Este enlace no es v&aacute;lido o ha sido desactivado
         </p>
       </div>
@@ -56,9 +57,10 @@ export default async function SharePage({
           alignItems: 'center',
           minHeight: '100vh',
           fontFamily: 'Inter, sans-serif',
+          background: 'var(--bg-canvas)',
         }}
       >
-        <p style={{ fontSize: '16px', color: '#6B7280', fontWeight: 500 }}>
+        <p style={{ fontSize: '16px', color: 'var(--text-gray)', fontWeight: 500 }}>
           Este enlace ha expirado. Solicita uno nuevo al administrador.
         </p>
       </div>
@@ -72,7 +74,7 @@ export default async function SharePage({
   })
 
   return (
-    <>
+    <div style={{ background: 'var(--bg-canvas)', minHeight: '100vh' }}>
       <PublicDashboard
         dashboard={{ ...dashboard, charts: filteredCharts }}
       />
@@ -89,7 +91,7 @@ export default async function SharePage({
           style={{
             fontSize: '13px',
             fontWeight: 600,
-            color: '#D1D5DB',
+            color: 'var(--text-muted)',
             letterSpacing: '0.5px',
           }}
         >
@@ -98,13 +100,13 @@ export default async function SharePage({
         <span
           style={{
             fontSize: '11px',
-            color: '#D1D5DB',
+            color: 'var(--text-muted)',
             marginLeft: '6px',
           }}
         >
           Shared by ArmandoAnalytics
         </span>
       </div>
-    </>
+    </div>
   )
 }

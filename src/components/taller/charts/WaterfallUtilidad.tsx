@@ -1,9 +1,10 @@
 'use client'
 
 import ReactECharts from 'echarts-for-react'
-import { PRIMARY, NEGATIVE, NEUTRAL, BORDER, INK, FONT } from '../chartColors'
+import { PRIMARY, NEGATIVE, NEUTRAL, FONT } from '../chartColors'
 import { fmtMoney, fmtAxis } from '../utils'
 import { useChartResize } from '../useChartResize'
+import { useChartColors } from '../useChartColors'
 
 interface Props {
   ingresos: number
@@ -21,6 +22,7 @@ export default function WaterfallUtilidad({
   utilidad,
 }: Props) {
   const { containerRef, chartRef } = useChartResize()
+  const { ink, border } = useChartColors()
   const categories = ['Ingresos', 'Costo partes', 'Nómina', 'Gastos op.', 'Utilidad']
 
   const afterCosto = ingresos - costoPartes
@@ -37,9 +39,9 @@ export default function WaterfallUtilidad({
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      backgroundColor: '#fff',
-      borderColor: BORDER,
-      textStyle: { fontFamily: FONT, fontSize: 11, color: INK },
+      backgroundColor: 'transparent',
+      borderColor: border,
+      textStyle: { fontFamily: FONT, fontSize: 11, color: ink },
       formatter: (params: any) => {
         const p = params.find((s: any) => s.seriesIndex === 1)
         if (!p) return ''
@@ -52,14 +54,14 @@ export default function WaterfallUtilidad({
     xAxis: {
       type: 'category',
       data: categories,
-      axisLabel: { fontFamily: FONT, fontSize: 11, color: INK },
-      axisLine: { lineStyle: { color: BORDER } },
+      axisLabel: { fontFamily: FONT, fontSize: 11, color: ink },
+      axisLine: { lineStyle: { color: border } },
       axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
-      axisLabel: { fontFamily: FONT, fontSize: 10, color: INK, formatter: (v: number) => fmtAxis(v) },
-      splitLine: { lineStyle: { color: BORDER, type: 'dashed' } },
+      axisLabel: { fontFamily: FONT, fontSize: 10, color: ink, formatter: (v: number) => fmtAxis(v) },
+      splitLine: { lineStyle: { color: border, type: 'dashed' } },
     },
     series: [
       {
@@ -94,7 +96,7 @@ export default function WaterfallUtilidad({
           position: 'top',
           fontFamily: FONT,
           fontSize: 10,
-          color: INK,
+          color: ink,
           formatter: (p: any) => fmtMoney(p.value),
         },
       },

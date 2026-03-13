@@ -27,8 +27,8 @@ function defaultDates() {
 const BLUE = '#4a6fa5'
 
 const card: React.CSSProperties = {
-  background: '#ffffff',
-  border: '1px solid #e5e1d8',
+  background: 'var(--taller-surface)',
+  border: '1px solid var(--taller-border)',
   borderRadius: 10,
   padding: 20,
   display: 'flex',
@@ -40,28 +40,28 @@ const chartWrap: React.CSSProperties = { flex: 1 }
 const label: React.CSSProperties = {
   fontSize: 10,
   fontWeight: 500,
-  color: '#97928a',
+  color: 'var(--taller-muted)',
   letterSpacing: '1px',
   textTransform: 'uppercase' as const,
-  fontFamily: "'IBM Plex Mono', monospace",
+  fontFamily: 'var(--taller-font-m)',
   marginBottom: 6,
 }
 
 const sectionTitle: React.CSSProperties = {
   fontSize: 11,
   fontWeight: 500,
-  color: '#97928a',
+  color: 'var(--taller-muted)',
   letterSpacing: '1px',
   textTransform: 'uppercase' as const,
-  fontFamily: "'IBM Plex Mono', monospace",
+  fontFamily: 'var(--taller-font-m)',
   marginBottom: 8,
 }
 
 const sectionHeading: React.CSSProperties = {
   fontSize: 15,
   fontWeight: 600,
-  color: '#1a1814',
-  fontFamily: "'Lora', serif",
+  color: 'var(--taller-ink)',
+  fontFamily: 'var(--taller-font-d)',
   marginBottom: 14,
   marginTop: 28,
 }
@@ -74,15 +74,15 @@ const kpiCard = (accent: string): React.CSSProperties => ({
 const kpiValue: React.CSSProperties = {
   fontSize: 22,
   fontWeight: 700,
-  color: '#1a1814',
-  fontFamily: "'Lora', serif",
+  color: 'var(--taller-ink)',
+  fontFamily: 'var(--taller-font-d)',
   margin: 0,
 }
 
 const kpiSub: React.CSSProperties = {
   fontSize: 11,
-  color: '#97928a',
-  fontFamily: "'IBM Plex Mono', monospace",
+  color: 'var(--taller-muted)',
+  fontFamily: 'var(--taller-font-m)',
   marginTop: 2,
 }
 
@@ -90,14 +90,14 @@ const tableStyles = {
   table: {
     width: '100%',
     borderCollapse: 'collapse' as const,
-    fontFamily: "'IBM Plex Mono', monospace",
+    fontFamily: 'var(--taller-font-m)',
     fontSize: 12,
   },
   th: {
     textAlign: 'left' as const,
     padding: '8px 12px',
-    borderBottom: '1px solid #e5e1d8',
-    color: '#97928a',
+    borderBottom: '1px solid var(--taller-border)',
+    color: 'var(--taller-muted)',
     fontWeight: 500,
     fontSize: 10,
     letterSpacing: '0.5px',
@@ -105,13 +105,13 @@ const tableStyles = {
   },
   td: {
     padding: '8px 12px',
-    borderBottom: '1px solid #f0ece4',
-    color: '#1a1814',
+    borderBottom: '1px solid var(--taller-progress-bg)',
+    color: 'var(--taller-ink)',
   },
   tdRight: {
     padding: '8px 12px',
-    borderBottom: '1px solid #f0ece4',
-    color: '#1a1814',
+    borderBottom: '1px solid var(--taller-progress-bg)',
+    color: 'var(--taller-ink)',
     textAlign: 'right' as const,
     fontVariantNumeric: 'tabular-nums' as const,
   },
@@ -123,7 +123,7 @@ const pill = (color: string, bg: string): React.CSSProperties => ({
   borderRadius: 12,
   fontSize: 10,
   fontWeight: 600,
-  fontFamily: "'IBM Plex Mono', monospace",
+  fontFamily: 'var(--taller-font-m)',
   backgroundColor: bg,
   color,
   letterSpacing: '0.3px',
@@ -153,7 +153,7 @@ export default async function TrabajoPage({
   if (error || !data) {
     return (
       <div style={{ padding: 40, textAlign: 'center' }}>
-        <p style={{ ...label, fontSize: 13, color: '#c94a4a' }}>
+        <p style={{ ...label, fontSize: 13, color: 'var(--taller-red)' }}>
           {error || 'No se pudieron cargar los datos'}
         </p>
       </div>
@@ -176,10 +176,10 @@ export default async function TrabajoPage({
       {/* Header */}
       <div className="taller-header">
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1a1814', fontFamily: "'Lora', serif", margin: 0 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--taller-ink)', fontFamily: 'var(--taller-font-d)', margin: 0 }}>
             Trabajo
           </h1>
-          <p style={{ fontSize: 12, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace", marginTop: 4 }}>
+          <p style={{ fontSize: 12, color: 'var(--taller-muted)', fontFamily: 'var(--taller-font-m)', marginTop: 4 }}>
             Operacion, mecanicos y servicios
           </p>
         </div>
@@ -194,16 +194,16 @@ export default async function TrabajoPage({
           <div style={label}>Total servicios</div>
           <p style={kpiValue}>{servicios.total_servicios}</p>
         </div>
-        <div style={kpiCard('#0070f3')}>
+        <div style={kpiCard('var(--taller-blue)')}>
           <div style={label}>Cobrados</div>
           <p style={kpiValue}>{servicios.pagados}</p>
           <p style={kpiSub}>Tasa de cobro: {tasaCobro}%</p>
         </div>
-        <div style={kpiCard('#c9942a')}>
+        <div style={kpiCard('var(--taller-amber)')}>
           <div style={label}>En proceso</div>
           <p style={kpiValue}>{servicios.en_proceso}</p>
         </div>
-        <div style={kpiCard('#c94a4a')}>
+        <div style={kpiCard('var(--taller-red)')}>
           <div style={label}>Sin cobrar</div>
           <p style={kpiValue}>{servicios.terminados_sin_cobrar}</p>
         </div>
@@ -236,16 +236,16 @@ export default async function TrabajoPage({
                   color: '#fff',
                   fontSize: 14,
                   fontWeight: 700,
-                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontFamily: 'var(--taller-font-m)',
                   flexShrink: 0,
                 }}>
                   {mec.iniciales || mec.nombre.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1814', fontFamily: "'Lora', serif" }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--taller-ink)', fontFamily: 'var(--taller-font-d)' }}>
                     {mec.nombre}
                   </div>
-                  <div style={{ fontSize: 11, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace" }}>
+                  <div style={{ fontSize: 11, color: 'var(--taller-muted)', fontFamily: 'var(--taller-font-m)' }}>
                     Mecanico &middot; Comision {(mec.comision_pct * 100).toFixed(0)}%
                   </div>
                 </div>
@@ -255,25 +255,25 @@ export default async function TrabajoPage({
               <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginBottom: 12 }}>
                 <div>
                   <div style={{ ...label, marginBottom: 2 }}>Servicios</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1814', fontFamily: "'IBM Plex Mono', monospace" }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--taller-ink)', fontFamily: 'var(--taller-font-m)' }}>
                     {mec.servicios}
                   </div>
                 </div>
                 <div>
                   <div style={{ ...label, marginBottom: 2 }}>MO generada</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: '#0070f3', fontFamily: "'IBM Plex Mono', monospace" }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--taller-blue)', fontFamily: 'var(--taller-font-m)' }}>
                     {fmtMoney(mec.mo_generada)}
                   </div>
                 </div>
                 <div>
                   <div style={{ ...label, marginBottom: 2 }}>Comision</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: '#c9942a', fontFamily: "'IBM Plex Mono', monospace" }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--taller-amber)', fontFamily: 'var(--taller-font-m)' }}>
                     {fmtMoney(mec.comision)}
                   </div>
                 </div>
                 <div>
                   <div style={{ ...label, marginBottom: 2 }}>Ticket prom.</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1814', fontFamily: "'IBM Plex Mono', monospace" }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--taller-ink)', fontFamily: 'var(--taller-font-m)' }}>
                     {fmtMoney(mec.ticket_promedio)}
                   </div>
                 </div>
@@ -282,17 +282,17 @@ export default async function TrabajoPage({
               {/* Row 3: Progress bar */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 10, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace" }}>
+                  <span style={{ fontSize: 10, color: 'var(--taller-muted)', fontFamily: 'var(--taller-font-m)' }}>
                     Participacion en MO total
                   </span>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#1a1814', fontFamily: "'IBM Plex Mono', monospace" }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--taller-ink)', fontFamily: 'var(--taller-font-m)' }}>
                     {mec.participacion_mo.toFixed(1)}%
                   </span>
                 </div>
                 <div style={{
                   height: 6,
                   borderRadius: 3,
-                  backgroundColor: '#f0ece4',
+                  backgroundColor: 'var(--taller-progress-bg)',
                   overflow: 'hidden',
                 }}>
                   <div style={{
@@ -309,7 +309,7 @@ export default async function TrabajoPage({
         </div>
       ) : (
         <div style={{ ...card, marginBottom: 20 }}>
-          <p style={{ fontSize: 12, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace" }}>
+          <p style={{ fontSize: 12, color: 'var(--taller-muted)', fontFamily: 'var(--taller-font-m)' }}>
             Sin mecanicos registrados
           </p>
         </div>
@@ -388,7 +388,7 @@ export default async function TrabajoPage({
               </table>
             </div>
           ) : (
-            <p style={{ fontSize: 12, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace" }}>
+            <p style={{ fontSize: 12, color: 'var(--taller-muted)', fontFamily: 'var(--taller-font-m)' }}>
               Sin servicios en proceso
             </p>
           )}
@@ -423,7 +423,7 @@ export default async function TrabajoPage({
               </table>
             </div>
           ) : (
-            <p style={{ fontSize: 12, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace" }}>
+            <p style={{ fontSize: 12, color: 'var(--taller-muted)', fontFamily: 'var(--taller-font-m)' }}>
               Sin servicios pendientes de cobro
             </p>
           )}

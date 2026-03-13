@@ -1,8 +1,9 @@
 'use client'
 
 import ReactECharts from 'echarts-for-react'
-import { PRIMARY, WARNING, NEGATIVE, BORDER, INK, FONT } from '../chartColors'
+import { PRIMARY, WARNING, NEGATIVE, FONT } from '../chartColors'
 import { useChartResize } from '../useChartResize'
+import { useChartColors } from '../useChartColors'
 
 interface Props {
   data: { semana: string; costo: number; utilidad: number }[]
@@ -16,6 +17,7 @@ function margenColor(pct: number) {
 
 export default function MargenRefacciones({ data }: Props) {
   const { containerRef, chartRef } = useChartResize()
+  const { ink, border } = useChartColors()
   const sorted = [...data]
   const margins = sorted.map((d) => {
     const precio = d.costo + d.utilidad
@@ -26,9 +28,9 @@ export default function MargenRefacciones({ data }: Props) {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      backgroundColor: '#fff',
-      borderColor: BORDER,
-      textStyle: { fontFamily: FONT, fontSize: 11, color: INK },
+      backgroundColor: 'transparent',
+      borderColor: border,
+      textStyle: { fontFamily: FONT, fontSize: 11, color: ink },
       formatter: (params: any) => {
         const p = params[0]
         if (!p) return ''
@@ -39,8 +41,8 @@ export default function MargenRefacciones({ data }: Props) {
     xAxis: {
       type: 'category',
       data: sorted.map((d) => d.semana),
-      axisLabel: { fontFamily: FONT, fontSize: 10, color: INK },
-      axisLine: { lineStyle: { color: BORDER } },
+      axisLabel: { fontFamily: FONT, fontSize: 10, color: ink },
+      axisLine: { lineStyle: { color: border } },
       axisTick: { show: false },
     },
     yAxis: {
@@ -49,10 +51,10 @@ export default function MargenRefacciones({ data }: Props) {
       axisLabel: {
         fontFamily: FONT,
         fontSize: 10,
-        color: INK,
+        color: ink,
         formatter: (v: number) => `${v}%`,
       },
-      splitLine: { lineStyle: { color: BORDER, type: 'dashed' } },
+      splitLine: { lineStyle: { color: border, type: 'dashed' } },
     },
     series: [
       {
@@ -67,7 +69,7 @@ export default function MargenRefacciones({ data }: Props) {
           position: 'top',
           fontFamily: FONT,
           fontSize: 10,
-          color: INK,
+          color: ink,
           formatter: (p: any) => `${Number(p.value).toFixed(1)}%`,
         },
       },
