@@ -602,7 +602,7 @@ export default async function PulsoPage({
               {unpaidCount} servicio{unpaidCount !== 1 ? 's' : ''} terminado{unpaidCount !== 1 ? 's' : ''} · pendientes de pago
             </p>
             <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-2">
-              Trabajo entregado que no ha entrado al banco. El cliente ya tiene el carro.
+              {`${fmtMoney(carteraPorCobrar)} — ${unpaidCount} servicio${unpaidCount !== 1 ? 's' : ''} entregado${unpaidCount !== 1 ? 's' : ''} al cliente, pero aún sin pago. El dinero ya está ganado, solo falta cobrarlo.`}
             </p>
           </div>
 
