@@ -224,7 +224,8 @@ export default async function PulsoPage({
 
   /* ── Section 5: ROI por mecánico (subconsultas separadas) ── */
   const db = await getTenantClient()
-  const [moQuery, swQuery, spQuery, payrollQuery, empleadosQuery] = await Promise.all([
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+  const [moQuery, swQuery, spQuery, payrollQuery, empleadosQuery, unpaidSvcsQuery, unpaidMoQuery, unpaidPartsQuery, staleSvcsQuery, funnelSvcsQuery, funnelMoQuery, funnelPartsQuery] = await Promise.all([
     // MO: service_jobs de servicios pagados válidos
     db
       .from('service_jobs')
@@ -261,6 +262,20 @@ export default async function PulsoPage({
       .from('employees')
       .select('id, name, last_name, color, initials, role')
       .eq('is_active', true),
+    // Alert 1: Servicios sin cobrar
+    db.from('services').select('id').is('paid_at', null).neq('status', 'invalid'),
+    // Alert 1: MO sin cobrar
+    db.from('service_jobs').select('labor_price, services!inner(status)').is('services.paid_at', null).neq('services.status', 'invalid'),
+    // Alert 1: Refacciones sin cobrar
+    db.from('service_parts').select('price, qty, services!inner(status)').is('services.paid_at', null).neq('services.status', 'invalid'),
+    // Alert 2: Servicios activos con +3 días
+    db.from('services').select('id').eq('status', 'active').is('paid_at', null).lt('created_at', threeDaysAgo),
+    // Funnel: todos los servicios creados en el período
+    db.from('services').select('id, status, paid_at').gte('created_at', desde).lte('created_at', hasta + 'T23:59:59'),
+    // Funnel: MO de servicios creados en el período
+    db.from('service_jobs').select('service_id, labor_price, services!inner(created_at)').gte('services.created_at', desde).lte('services.created_at', hasta + 'T23:59:59'),
+    // Funnel: Refacciones de servicios creados en el período
+    db.from('service_parts').select('service_id, price, qty, services!inner(created_at)').gte('services.created_at', desde).lte('services.created_at', hasta + 'T23:59:59'),
   ])
 
   // MO por service_id (de service_jobs — employee_id puede ser null)
@@ -302,14 +317,14 @@ export default async function PulsoPage({
     refMap.set(eid, total)
   })
 
-  // Nómina por employee_id
+  // Nómina por employee_id — UN registro por empleado (sin acumular)
   const payMap = new Map<string, { sueldo: number; comisiones: number }>()
   for (const row of (payrollQuery.data ?? []) as any[]) {
     const eid = String(row.employee_id)
-    const e = payMap.get(eid) ?? { sueldo: 0, comisiones: 0 }
-    e.sueldo += Number(row.base_salary) || 0
-    e.comisiones += Number(row.total_commission) || 0
-    payMap.set(eid, e)
+    payMap.set(eid, {
+      sueldo: Number(row.base_salary) || 0,
+      comisiones: Number(row.total_commission) || 0,
+    })
   }
 
   // IDs con payroll en el período
@@ -347,6 +362,43 @@ export default async function PulsoPage({
     utilidad: t.utilidad + r.utilidad,
   }), { servicios: 0, totalGenerado: 0, mo: 0, comisiones: 0, sueldo: 0, costoTotal: 0, utilidad: 0 })
   const totRoi = totMec.costoTotal > 0 ? totMec.mo / totMec.costoTotal : 0
+
+  /* ── Alertas operativas ── */
+  const unpaidCount = (unpaidSvcsQuery.data ?? []).length
+  const unpaidMO = (unpaidMoQuery.data ?? []).reduce((s: number, r: any) => s + (Number(r.labor_price) || 0), 0)
+  const unpaidParts = (unpaidPartsQuery.data ?? []).reduce((s: number, r: any) => s + ((Number(r.price) * Number(r.qty)) || 0), 0)
+  const carteraPorCobrar = unpaidMO + unpaidParts
+  const staleCount = (staleSvcsQuery.data ?? []).length
+  const lowRoiMecs = mecanicos.filter(mc => mc.costoTotal > 0 && mc.roi < 1.5)
+
+  /* ── Embudo de conversión ── */
+  const funnelSvcs = (funnelSvcsQuery.data ?? []) as any[]
+  const funnelMoData = (funnelMoQuery.data ?? []) as any[]
+  const funnelPartsData = (funnelPartsQuery.data ?? []) as any[]
+
+  const funnelValueMap = new Map<string, number>()
+  for (const r of funnelMoData) {
+    const sid = String(r.service_id)
+    funnelValueMap.set(sid, (funnelValueMap.get(sid) ?? 0) + (Number(r.labor_price) || 0))
+  }
+  for (const r of funnelPartsData) {
+    const sid = String(r.service_id)
+    funnelValueMap.set(sid, (funnelValueMap.get(sid) ?? 0) + ((Number(r.price) * Number(r.qty)) || 0))
+  }
+
+  const sumFunnelValue = (svcs: any[]) => svcs.reduce((s: number, sv: any) => s + (funnelValueMap.get(String(sv.id)) ?? 0), 0)
+  const cotizaciones = funnelSvcs
+  const aprobados = funnelSvcs.filter((s: any) => s.status !== 'invalid')
+  const completados = funnelSvcs.filter((s: any) => s.paid_at !== null)
+  const noAprobados = funnelSvcs.filter((s: any) => s.status === 'invalid')
+
+  const funnel = [
+    { label: 'Cotizaciones', count: cotizaciones.length, value: sumFunnelValue(cotizaciones), color: '#1a1814' },
+    { label: 'Aprobados', count: aprobados.length, value: sumFunnelValue(aprobados), color: '#0070f3' },
+    { label: 'Completados', count: completados.length, value: sumFunnelValue(completados), color: '#27ae60' },
+  ]
+  const noAprobadosCount = noAprobados.length
+  const noAprobadosValue = sumFunnelValue(noAprobados)
 
   return (
     <div>
@@ -461,6 +513,98 @@ export default async function PulsoPage({
             {roiMO.toFixed(1)}x
           </div>
           <p style={kpiSub}>Objetivo: &gt;2x</p>
+        </div>
+      </div>
+
+      {/* ═══ ALERTAS OPERATIVAS ═══ */}
+      <div className="taller-kpis" style={{ marginBottom: 20 }}>
+        <div style={card}>
+          <div style={label}>Cartera por cobrar</div>
+          <div style={{ ...kpiValue, color: carteraPorCobrar > 0 ? '#c94a4a' : '#97928a' }}>
+            {fmtMoney(carteraPorCobrar)}
+          </div>
+          <p style={kpiSub}>{unpaidCount} servicio{unpaidCount !== 1 ? 's' : ''} sin cobrar</p>
+        </div>
+
+        <div style={card}>
+          <div style={label}>Servicios activos +3 días</div>
+          <div style={{ ...kpiValue, color: staleCount > 0 ? '#f5a623' : '#97928a' }}>
+            {staleCount}
+          </div>
+          <p style={kpiSub}>Requieren atención</p>
+        </div>
+
+        <div style={card}>
+          <div style={label}>Mecánicos con ROI &lt; 1.5x</div>
+          <div style={{ ...kpiValue, color: lowRoiMecs.length > 0 ? '#c94a4a' : '#27ae60' }}>
+            {lowRoiMecs.length}
+          </div>
+          <p style={kpiSub}>
+            {lowRoiMecs.length > 0
+              ? lowRoiMecs.map(mc => mc.nombre.split(' ')[0]).join(', ')
+              : 'Todos en objetivo'}
+          </p>
+        </div>
+      </div>
+
+      {/* ═══ EMBUDO DE CONVERSIÓN ═══ */}
+      <div style={{ ...card, marginBottom: 20 }}>
+        <div style={sectionTitle}>Embudo de conversión</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap' }}>
+          {funnel.flatMap((stage, i) => {
+            const pct = i > 0 && funnel[i - 1].count > 0
+              ? ((stage.count / funnel[i - 1].count) * 100).toFixed(0)
+              : null
+            const items = []
+            if (i > 0) {
+              items.push(
+                <div key={`arrow-${i}`} style={{
+                  fontSize: 14, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace",
+                  padding: '0 10px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                }}>
+                  <span>→</span>
+                  <span style={{ fontSize: 10 }}>{pct}%</span>
+                </div>
+              )
+            }
+            items.push(
+              <div key={stage.label} style={{
+                background: '#f4f2ed', borderRadius: 8, padding: '12px 16px',
+                minWidth: 120, flex: '1 1 0',
+              }}>
+                <div style={{ ...label, marginBottom: 4 }}>{stage.label}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: stage.color, fontFamily: "'IBM Plex Mono', monospace" }}>
+                  {stage.count}
+                </div>
+                <div style={{ fontSize: 11, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace", marginTop: 2 }}>
+                  {fmtMoney(stage.value)}
+                </div>
+              </div>
+            )
+            return items
+          })}
+          {noAprobadosCount > 0 && (
+            <>
+              <div style={{
+                fontSize: 14, color: '#c94a4a', fontFamily: "'IBM Plex Mono', monospace",
+                padding: '0 10px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+              }}>
+                <span>✗</span>
+              </div>
+              <div style={{
+                background: '#fef2f2', borderRadius: 8, padding: '12px 16px',
+                minWidth: 120, flex: '1 1 0',
+              }}>
+                <div style={{ ...label, marginBottom: 4, color: '#c94a4a' }}>No aprobados</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#c94a4a', fontFamily: "'IBM Plex Mono', monospace" }}>
+                  {noAprobadosCount}
+                </div>
+                <div style={{ fontSize: 11, color: '#97928a', fontFamily: "'IBM Plex Mono', monospace", marginTop: 2 }}>
+                  {fmtMoney(noAprobadosValue)}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
