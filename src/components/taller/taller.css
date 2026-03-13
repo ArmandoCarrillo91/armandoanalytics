@@ -17,6 +17,9 @@
   --taller-progress-bg: #f0ece4;
   --taller-hero-bg: #111111;
   --taller-hero-text: #ffffff;
+  --logo-rect-fill: rgba(0,0,0,0.06);
+  --logo-rect-stroke: rgba(0,0,0,0.12);
+  --logo-text-fill: rgba(0,0,0,0.90);
 }
 
 .dark .taller-shell {
@@ -29,6 +32,9 @@
   --taller-progress-bg: rgba(255,255,255,0.06);
   --taller-hero-bg: #1e1e1e;
   --taller-hero-text: #ffffff;
+  --logo-rect-fill: rgba(255,255,255,0.03);
+  --logo-rect-stroke: rgba(255,255,255,0.08);
+  --logo-text-fill: rgba(255,255,255,0.95);
 }
 
 /* ── Taller Responsive ── */
@@ -85,6 +91,15 @@
   inset: 0;
   z-index: 55;
   background: rgba(0, 0, 0, 0.3);
+}
+
+/* Sidebar share icon — visible on hover */
+.pulso-nav-wrapper .pulso-share-icon {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.pulso-nav-wrapper:hover .pulso-share-icon {
+  opacity: 1;
 }
 
 /* ── Page layout classes ── */

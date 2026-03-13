@@ -23,7 +23,7 @@ export default async function TallerLayout({
   const [{ data: tenantRows }, { data: profile }] = await Promise.all([
     supabase
       .from('tenant_users')
-      .select('tenant:tenants!inner(slug, name)')
+      .select('role, tenant:tenants!inner(slug, name)')
       .eq('user_id', user.id)
       .eq('tenant.is_active', true),
     supabaseAdmin
@@ -33,11 +33,14 @@ export default async function TallerLayout({
       .single(),
   ])
 
-  const otherTenants = (tenantRows ?? [])
+  const rows = tenantRows ?? []
+  const otherTenants = rows
     .map((r: any) => ({ slug: r.tenant.slug as string, name: r.tenant.name as string }))
     .filter((t) => t.slug !== 'taller')
 
   const isPlatformAdmin = profile?.is_platform_admin === true
+  const tallerRow = rows.find((r: any) => r.tenant.slug === 'taller') as any
+  const userRole: string | null = tallerRow?.role ?? null
 
   return (
     <>
@@ -48,7 +51,7 @@ export default async function TallerLayout({
         rel="stylesheet"
       />
 
-      <TallerShell otherTenants={otherTenants} isPlatformAdmin={isPlatformAdmin}>{children}</TallerShell>
+      <TallerShell otherTenants={otherTenants} isPlatformAdmin={isPlatformAdmin} userRole={userRole}>{children}</TallerShell>
     </>
   )
 }

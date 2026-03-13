@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import TallerSidebar from './TallerSidebar'
 
-export default function TallerShell({ children, otherTenants = [], isPlatformAdmin }: { children: React.ReactNode; otherTenants?: { slug: string; name: string }[]; isPlatformAdmin?: boolean }) {
+export default function TallerShell({ children, otherTenants = [], isPlatformAdmin, userRole }: { children: React.ReactNode; otherTenants?: { slug: string; name: string }[]; isPlatformAdmin?: boolean; userRole?: string | null }) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -16,7 +16,7 @@ export default function TallerShell({ children, otherTenants = [], isPlatformAdm
 
       {/* Sidebar */}
       <aside className={`taller-sidebar${open ? ' open' : ''}`}>
-        <TallerSidebar onNavigate={() => setOpen(false)} otherTenants={otherTenants} isPlatformAdmin={isPlatformAdmin} />
+        <TallerSidebar onNavigate={() => setOpen(false)} otherTenants={otherTenants} isPlatformAdmin={isPlatformAdmin} userRole={userRole} />
       </aside>
 
       {/* Main content */}

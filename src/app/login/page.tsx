@@ -45,12 +45,12 @@ export default function LoginPage() {
     <div className={styles.root}>
       <div className={styles.container}>
         <div className={styles.logo}>
-          <svg className={styles.logoSvg} width="52" height="52" viewBox="0 0 52 52" fill="none">
-            <rect x=".5" y=".5" width="51" height="51" rx="13"
+          <svg className={styles.logoSvg} width="52" height="52" viewBox="0 0 34 34" fill="none">
+            <rect x=".5" y=".5" width="33" height="33" rx="9"
               stroke="rgba(255,255,255,0.08)" fill="rgba(255,255,255,0.03)" />
-            <text x="26" y="26" textAnchor="middle" dominantBaseline="central"
-              fontSize="30" fontWeight="800" fill="rgba(255,255,255,0.95)"
-              fontFamily="Inter, sans-serif">A</text>
+            <text x="17" y="17" textAnchor="middle" dominantBaseline="central"
+              fontSize="20" fontWeight="800" fill="rgba(255,255,255,0.95)"
+              fontFamily="JetBrains Mono, SF Mono, monospace">A</text>
           </svg>
           <span className={styles.logoText}>armandoanalytics</span>
         </div>

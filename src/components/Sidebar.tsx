@@ -42,23 +42,19 @@ export default function Sidebar({ tenants, email, isPlatformAdmin }: { tenants: 
     >
       {/* Logo */}
       <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-          <rect width="28" height="28" rx="7" fill="var(--accent)" />
-          <text
-            x="14" y="14"
-            textAnchor="middle"
-            dominantBaseline="central"
-            fontSize="16"
-            fontWeight="800"
-            fill="white"
-            fontFamily="Inter, sans-serif"
-          >A</text>
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+          <rect x=".5" y=".5" width="33" height="33" rx="9"
+            stroke="var(--logo-rect-stroke)" fill="var(--logo-rect-fill)" />
+          <text x="17" y="17" textAnchor="middle" dominantBaseline="central"
+            fontSize="20" fontWeight="800" fill="var(--logo-text-fill)"
+            fontFamily="JetBrains Mono, SF Mono, monospace">A</text>
         </svg>
         <span
           style={{
             fontSize: 13,
             fontWeight: 500,
             color: 'var(--text-black)',
+            fontFamily: "'JetBrains Mono', monospace",
             letterSpacing: '-0.3px',
           }}
         >

@@ -274,6 +274,18 @@ export async function toggleDashboardShare(
   }
 }
 
+// Get current share state for a dashboard
+export async function getDashboardShareState(dashboardId: string) {
+  const supabase = await getSupabase()
+  const { data, error } = await supabase
+    .from('dashboards')
+    .select('is_public, public_token, public_token_expires_at')
+    .eq('id', dashboardId)
+    .single()
+  if (error) throw error
+  return data as { is_public: boolean; public_token: string | null; public_token_expires_at: string | null }
+}
+
 // Get audit history for a dashboard or chart
 export async function getAuditLog(
   tenantSlug: string,

@@ -36,12 +36,22 @@
   --warning-bg: #fffbeb;
   --warning-border: #fde68a;
 
+  /* ── Logo ── */
+  --logo-rect-fill: rgba(0,0,0,0.06);
+  --logo-rect-stroke: rgba(0,0,0,0.12);
+  --logo-text-fill: rgba(0,0,0,0.90);
+
   /* ── Shadow ── */
   --shadow-popover: 0 4px 12px rgba(0,0,0,0.1);
   --shadow-modal: 0 8px 30px rgba(0,0,0,0.12);
 }
 
 .dark {
+  /* ── Logo ── */
+  --logo-rect-fill: rgba(255,255,255,0.03);
+  --logo-rect-stroke: rgba(255,255,255,0.08);
+  --logo-text-fill: rgba(255,255,255,0.95);
+
   /* ── System palette (dark) ── */
   --bg-light: #0C0C0C;
   --bg-canvas: #111111;

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import InviteUserModal from '@/components/InviteUserModal'
 import TallerThemeToggle from './TallerThemeToggle'
+import SidebarPulsoShare from './SidebarPulsoShare'
 
 const NAV_ITEMS = [
   { label: 'Pulso', href: '/dashboard/taller/pulso', icon: '♡' },
@@ -14,7 +15,7 @@ const NAV_ITEMS = [
   { label: 'Trabajo', href: '/dashboard/taller/trabajo', icon: '⚙' },
 ]
 
-export default function TallerSidebar({ onNavigate, otherTenants = [], isPlatformAdmin }: { onNavigate?: () => void; otherTenants?: { slug: string; name: string }[]; isPlatformAdmin?: boolean }) {
+export default function TallerSidebar({ onNavigate, otherTenants = [], isPlatformAdmin, userRole }: { onNavigate?: () => void; otherTenants?: { slug: string; name: string }[]; isPlatformAdmin?: boolean; userRole?: string | null }) {
   console.log('isPlatformAdmin:', isPlatformAdmin)
   const pathname = usePathname()
   const router = useRouter()
@@ -31,24 +32,19 @@ export default function TallerSidebar({ onNavigate, otherTenants = [], isPlatfor
       {/* Logo */}
       <div style={{ padding: '20px 20px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-            <rect width="30" height="30" rx="8" fill="var(--taller-green)" />
-            <text
-              x="15" y="15"
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize="15"
-              fontWeight="700"
-              fill="#ffffff"
-              fontFamily="'Lora', serif"
-            >AA</text>
+          <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+            <rect x=".5" y=".5" width="33" height="33" rx="9"
+              stroke="var(--logo-rect-stroke)" fill="var(--logo-rect-fill)" />
+            <text x="17" y="17" textAnchor="middle" dominantBaseline="central"
+              fontSize="20" fontWeight="800" fill="var(--logo-text-fill)"
+              fontFamily="JetBrains Mono, SF Mono, monospace">A</text>
           </svg>
           <span
             style={{
               fontSize: 14,
               fontWeight: 600,
               color: 'var(--taller-ink)',
-              fontFamily: "'Lora', serif",
+              fontFamily: "'JetBrains Mono', monospace",
               letterSpacing: '-0.3px',
             }}
           >
@@ -76,35 +72,75 @@ export default function TallerSidebar({ onNavigate, otherTenants = [], isPlatfor
 
         {NAV_ITEMS.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + '/')
+          const canShare = item.label === 'Pulso' && (userRole === 'admin' || userRole === 'editor')
+
+          const linkStyle: React.CSSProperties = {
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '9px 20px',
+            fontSize: 13,
+            fontWeight: active ? 600 : 400,
+            color: active ? 'var(--taller-green)' : 'var(--taller-ink)',
+            background: active ? 'rgba(45, 106, 79, 0.08)' : 'transparent',
+            borderLeft: `3px solid ${active ? 'var(--taller-green)' : 'transparent'}`,
+            textDecoration: 'none',
+            transition: 'background 0.15s, color 0.15s',
+            fontFamily: "'IBM Plex Mono', monospace",
+            flex: 1,
+          }
+
+          const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
+            if (!active) e.currentTarget.style.background = 'rgba(45, 106, 79, 0.04)'
+          }
+          const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
+            if (!active) e.currentTarget.style.background = 'transparent'
+          }
+
+          if (canShare) {
+            return (
+              <div
+                key={item.href}
+                className="pulso-nav-wrapper"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: active ? 'rgba(45, 106, 79, 0.08)' : 'transparent',
+                  borderLeft: `3px solid ${active ? 'var(--taller-green)' : 'transparent'}`,
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'rgba(45, 106, 79, 0.04)' }}
+                onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
+              >
+                <Link
+                  href={item.href}
+                  onClick={onNavigate}
+                  style={{
+                    ...linkStyle,
+                    background: 'transparent',
+                    borderLeft: 'none',
+                  }}
+                  onMouseEnter={() => {}}
+                  onMouseLeave={() => {}}
+                >
+                  <span style={{ fontSize: 14, opacity: active ? 1 : 0.5 }}>{item.icon}</span>
+                  {item.label}
+                </Link>
+                <div style={{ paddingRight: 12 }}>
+                  <SidebarPulsoShare />
+                </div>
+              </div>
+            )
+          }
+
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={onNavigate}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '9px 20px',
-                fontSize: 13,
-                fontWeight: active ? 600 : 400,
-                color: active ? 'var(--taller-green)' : 'var(--taller-ink)',
-                background: active ? 'rgba(45, 106, 79, 0.08)' : 'transparent',
-                borderLeft: `3px solid ${active ? 'var(--taller-green)' : 'transparent'}`,
-                textDecoration: 'none',
-                transition: 'background 0.15s, color 0.15s',
-                fontFamily: "'IBM Plex Mono', monospace",
-              }}
-              onMouseEnter={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = 'rgba(45, 106, 79, 0.04)'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = 'transparent'
-                }
-              }}
+              style={linkStyle}
+              onMouseEnter={hoverIn}
+              onMouseLeave={hoverOut}
             >
               <span style={{ fontSize: 14, opacity: active ? 1 : 0.5 }}>{item.icon}</span>
               {item.label}
