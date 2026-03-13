@@ -397,7 +397,6 @@ export default async function PulsoPage({
             <PulsoShareButton
               initialIsPublic={shareState.is_public ?? false}
               initialToken={shareState.public_token ?? null}
-              initialExpiresAt={shareState.public_token_expires_at ?? null}
             />
           )}
           <PulsoExportButtons data={exportData} />
