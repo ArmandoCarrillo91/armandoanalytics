@@ -1,5 +1,3 @@
-Crear el archivo src/app/api/interpret/route.ts con el siguiente contenido:
-
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -47,8 +45,8 @@ export async function POST(request: NextRequest) {
   const { dashboardData, periodo } = await request.json()
 
   // 4. Llamar a Claude
-  const prompt = `Eres un consultor financiero experto en talleres automotrices. 
-Analiza estos datos del período ${periodo} y da un análisis ejecutivo en español, 
+  const prompt = `Eres un consultor financiero experto en talleres automotrices.
+Analiza estos datos del período ${periodo} y da un análisis ejecutivo en español,
 estilo Warren Buffett meets Elon Musk: directo, sin rodeos, con criterio.
 
 Datos:
@@ -93,5 +91,3 @@ Máximo 200 palabras. Sin markdown, sin asteriscos, texto plano.`
 
   return NextResponse.json({ content, remaining: MAX_USES - newCount })
 }
-
-No toques nada más.
