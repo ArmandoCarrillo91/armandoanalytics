@@ -105,7 +105,7 @@ export default function PulsoTendencia({ data, hideLegend }: Props) {
   }
 
   return (
-    <div ref={containerRef} className="w-full aspect-[21/5]">
+    <div ref={containerRef} className="w-full aspect-[16/7]">
       <ReactECharts ref={chartRef} option={option} notMerge style={{ width: '100%', height: '100%' }} />
     </div>
   )
