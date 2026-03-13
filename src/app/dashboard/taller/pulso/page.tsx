@@ -399,7 +399,7 @@ export default async function PulsoPage({
               initialToken={shareState.public_token ?? null}
             />
           )}
-          <PulsoExportButtons data={exportData} />
+          <PulsoExportButtons data={exportData} canInterpret={canShare} />
         </div>
       </div>
 

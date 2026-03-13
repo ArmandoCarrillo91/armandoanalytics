@@ -6,9 +6,10 @@ import { createClient } from '@/lib/supabase/client'
 interface Tenant {
   id: string
   name: string
+  slug: string
 }
 
-export default function InviteUserModal({ onClose }: { onClose: () => void }) {
+export default function InviteUserModal({ onClose, tenantSlug }: { onClose: () => void; tenantSlug?: string }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [tenantId, setTenantId] = useState('')
@@ -23,12 +24,13 @@ export default function InviteUserModal({ onClose }: { onClose: () => void }) {
       const supabase = createClient()
       const { data } = await supabase
         .from('tenants')
-        .select('id, name')
+        .select('id, name, slug')
         .eq('is_active', true)
         .order('name')
       if (data) {
         setTenants(data)
-        if (data.length > 0) setTenantId(data[0].id)
+        const match = tenantSlug ? data.find(t => t.slug === tenantSlug) : null
+        setTenantId(match ? match.id : data[0]?.id ?? '')
       }
     }
     fetchTenants()

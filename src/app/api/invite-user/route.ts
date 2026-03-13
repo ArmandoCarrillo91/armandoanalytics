@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(request: NextRequest) {
-  // Verify caller is authenticated and is_platform_admin
+  // Verify caller is authenticated
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -11,7 +11,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   }
 
-  const { data: profile } = await supabase
+  // Use service role to bypass RLS when checking is_platform_admin
+  const admin = createAdminClient()
+  const { data: profile } = await admin
     .from('users')
     .select('is_platform_admin')
     .eq('id', user.id)
@@ -29,8 +31,6 @@ export async function POST(request: NextRequest) {
 
   const validRoles = ['admin', 'editor', 'viewer']
   const safeRole = validRoles.includes(role) ? role : 'viewer'
-
-  const admin = createAdminClient()
 
   // Step 1: Create user in Supabase Auth
   const { data: authData, error: authError } = await admin.auth.admin.createUser({

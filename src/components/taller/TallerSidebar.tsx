@@ -281,7 +281,7 @@ export default function TallerSidebar({ onNavigate, otherTenants = [], isPlatfor
         </button>
         </div>
       </div>
-      {showInvite && <InviteUserModal onClose={() => setShowInvite(false)} />}
+      {showInvite && <InviteUserModal onClose={() => setShowInvite(false)} tenantSlug="taller" />}
     </div>
   )
 }

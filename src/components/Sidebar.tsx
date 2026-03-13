@@ -205,7 +205,7 @@ export default function Sidebar({ tenants, email, isPlatformAdmin }: { tenants: 
           </svg>
         </button>
       </div>
-      {showInvite && <InviteUserModal onClose={() => setShowInvite(false)} />}
+      {showInvite && <InviteUserModal onClose={() => setShowInvite(false)} tenantSlug={pathname.split('/')[2]} />}
     </aside>
   )
 }
