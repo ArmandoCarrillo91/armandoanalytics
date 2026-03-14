@@ -16,7 +16,7 @@ export default async function DashboardIndex() {
 
   const slug = (tenantUser?.tenant as any)?.slug
   if (slug) {
-    redirect(`/dashboard/${slug}/pulso`)
+    redirect(`/dashboard/${slug}`)
   }
 
   console.error('dashboard/page: could not resolve tenant for user', user.id)

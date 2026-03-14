@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
-import TallerShell from '@/app/dashboard/tenants/taller/components/TallerShell'
-import '@/app/dashboard/tenants/taller/components/taller.css'
+import TallerShell from '@/app/dashboard/(tenants)/taller/components/TallerShell'
+import '@/app/dashboard/(tenants)/taller/components/taller.css'
 
 export default async function TallerLayout({
   children,

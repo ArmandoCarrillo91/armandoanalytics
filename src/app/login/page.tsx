@@ -34,7 +34,7 @@ export default function LoginPage() {
 
     const slug = (tenantUser?.tenant as any)?.slug
     if (slug) {
-      router.push(`/dashboard/${slug}/pulso`)
+      router.push(`/dashboard/${slug}`)
     } else {
       console.error('login: could not resolve tenant for user')
       router.push('/')

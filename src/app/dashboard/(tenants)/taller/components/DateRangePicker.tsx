@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
-import type { Agg } from '@/app/dashboard/tenants/taller/types'
+import type { Agg } from '@/app/dashboard/(tenants)/taller/types'
 
 const AGG_OPTIONS: { value: Agg; label: string }[] = [
   { value: 'dia', label: 'Día' },

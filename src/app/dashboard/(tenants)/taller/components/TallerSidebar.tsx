@@ -9,7 +9,7 @@ import TallerThemeToggle from './TallerThemeToggle'
 import SidebarPulsoShare from './SidebarPulsoShare'
 
 const NAV_ITEMS = [
-  { label: 'Pulso', href: '/dashboard/taller/pulso', icon: '♡' },
+  { label: 'Pulso', href: '/dashboard/taller', icon: '♡' },
 ]
 
 export default function TallerSidebar({ onNavigate, otherTenants = [], isPlatformAdmin, userRole }: { onNavigate?: () => void; otherTenants?: { slug: string; name: string }[]; isPlatformAdmin?: boolean; userRole?: string | null }) {
