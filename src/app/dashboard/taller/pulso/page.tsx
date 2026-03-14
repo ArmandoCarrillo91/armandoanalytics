@@ -8,6 +8,17 @@ import PulsoExportButtons from '@/components/taller/PulsoExportButtons'
 import { fmtMoney } from '@/components/taller/utils'
 import { getUserTenantRole } from '@/app/actions/dashboards'
 import InfoTooltip from '@/components/taller/InfoTooltip'
+import {
+  ROI_EXCELLENT,
+  ROI_MO_SCALE,
+  COST_TARGETS,
+  TOTAL_COST_TARGET,
+  GROSS_MARGIN_TARGET,
+  STALE_SERVICE_DAYS,
+  LOW_MECHANIC_ROI,
+  roiBadgeColor,
+  costColor,
+} from '@/lib/taller/thresholds'
 
 const VALID_AGG = new Set<Agg>(['dia', 'semana', 'mes', 'anio'])
 
@@ -41,18 +52,6 @@ function computeMetrics(data: TallerData) {
   const egresos = costoPartes + nominaNeta + totalGastos
   const flujoLibre = ingresos - egresos
   return { ingresos, costoPartes, nominaNeta, totalGastos, egresos, flujoLibre }
-}
-
-function roiBadgeColor(roi: number) {
-  if (roi > 2) return '#16a34a'
-  if (roi >= 1.5) return '#d97706'
-  return '#dc2626'
-}
-
-function costColor(pct: number, target: number) {
-  if (pct > target) return '#dc2626'
-  if (pct > target * 0.8) return '#d97706'
-  return '#0070f3'
 }
 
 /* ── Page ── */
@@ -148,19 +147,22 @@ export default async function PulsoPage({
 
   /* Estructura de costos */
   const costRows = [
-    { name: 'Operación', value: gastosGrouped.get('Operación') ?? 0, target: 40 },
-    { name: 'Nómina', value: m.nominaNeta, target: 30 },
-    { name: 'Local', value: gastosGrouped.get('Local') ?? 0, target: 25 },
-    { name: 'Personal', value: gastosGrouped.get('Personal') ?? 0, target: 5 },
-    { name: 'Administración', value: gastosGrouped.get('Administración') ?? 0, target: 15 },
+    { name: 'Operación', value: gastosGrouped.get('Operación') ?? 0, target: COST_TARGETS.Operación },
+    { name: 'Nómina', value: m.nominaNeta, target: COST_TARGETS.Nómina },
+    { name: 'Local', value: gastosGrouped.get('Local') ?? 0, target: COST_TARGETS.Local },
+    { name: 'Personal', value: gastosGrouped.get('Personal') ?? 0, target: COST_TARGETS.Personal },
+    { name: 'Administración', value: gastosGrouped.get('Administración') ?? 0, target: COST_TARGETS.Administración },
   ]
   const totalCostValue = costRows.reduce((s, r) => s + r.value, 0)
   const totalCostPct = m.ingresos > 0 ? (totalCostValue / m.ingresos) * 100 : 0
 
   /* ── ROI por mecánico (subconsultas separadas) ── */
   const db = await getTenantClient()
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-  const [moQuery, swQuery, spQuery, payrollQuery, empleadosQuery, unpaidSvcsQuery, unpaidMoQuery, unpaidPartsQuery, staleSvcsQuery, funnelSvcsQuery, funnelMoQuery, funnelPartsQuery] = await Promise.all([
+  const threeDaysAgo = new Date(Date.now() - STALE_SERVICE_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  const enProcesoStage = await db.from('stages').select('id').eq('stage_type', 'en_progreso').single()
+  const enProcesoStageId = enProcesoStage.data?.id
+
+  const [moQuery, swQuery, spQuery, payrollQuery, empleadosQuery, unpaidSvcsQuery, unpaidMoQuery, unpaidPartsQuery, staleSvcsQuery, funnelSvcsQuery, funnelMoQuery, funnelPartsQuery, enProcesoQuery] = await Promise.all([
     // MO: service_jobs de servicios pagados válidos
     db.from('service_jobs')
       .select('employee_id, service_id, labor_price, services!inner(paid_at, status)')
@@ -206,7 +208,7 @@ export default async function PulsoPage({
     db.from('services').select('id')
       .eq('status', 'active').is('paid_at', null).lt('created_at', threeDaysAgo),
     // Funnel: todos los servicios creados en el período
-    db.from('services').select('id, status, paid_at')
+    db.from('services').select('id, status, paid_at, work_completed')
       .gte('created_at', desde).lte('created_at', hasta + 'T23:59:59'),
     // Funnel: MO de servicios creados en el período
     db.from('service_jobs').select('service_id, labor_price, services!inner(created_at)')
@@ -214,6 +216,12 @@ export default async function PulsoPage({
     // Funnel: Refacciones de servicios creados en el período
     db.from('service_parts').select('service_id, price, qty, services!inner(created_at)')
       .gte('services.created_at', desde).lte('services.created_at', hasta + 'T23:59:59'),
+    // En proceso: servicios en etapa en_progreso (sin filtro de fecha)
+    (() => {
+      const q = db.from('services').select('id', { count: 'exact', head: true })
+        .eq('status', 'active').is('paid_at', null).eq('work_completed', false)
+      return enProcesoStageId ? q.eq('stage_id', enProcesoStageId) : q
+    })(),
   ])
 
   // MO por service_id
@@ -255,14 +263,14 @@ export default async function PulsoPage({
     refMap.set(eid, total)
   })
 
-  // Nómina por employee_id — UN registro por empleado (asignación directa)
+  // Nómina por employee_id — acumular todas las semanas del período
   const payMap = new Map<string, { sueldo: number; comisiones: number }>()
   for (const row of (payrollQuery.data ?? []) as any[]) {
     const eid = String(row.employee_id)
-    payMap.set(eid, {
-      sueldo: Number(row.base_salary) || 0,
-      comisiones: Number(row.total_commission) || 0,
-    })
+    const prev = payMap.get(eid) ?? { sueldo: 0, comisiones: 0 }
+    prev.sueldo += Number(row.base_salary) || 0
+    prev.comisiones += Number(row.total_commission) || 0
+    payMap.set(eid, prev)
   }
 
   const idsWithPayroll = new Set(payMap.keys())
@@ -302,7 +310,7 @@ export default async function PulsoPage({
   const unpaidParts = (unpaidPartsQuery.data ?? []).reduce((s: number, r: any) => s + ((Number(r.price) * Number(r.qty)) || 0), 0)
   const carteraPorCobrar = unpaidMO + unpaidParts
   const staleCount = (staleSvcsQuery.data ?? []).length
-  const lowRoiMecs = mecanicos.filter(mc => mc.costoTotal > 0 && mc.roi < 1.5)
+  const lowRoiMecs = mecanicos.filter(mc => mc.costoTotal > 0 && mc.roi < LOW_MECHANIC_ROI)
 
   /* Embudo de conversión */
   const funnelSvcs = (funnelSvcsQuery.data ?? []) as any[]
@@ -338,7 +346,7 @@ export default async function PulsoPage({
   /* Ticket promedio + Servicios en proceso */
   const ticketPromedio = cobrados.length > 0 ? m.ingresos / cobrados.length : 0
   const ticketMediana = data.ticket_mediana ?? 0
-  const enProceso = (funnelSvcsQuery.data ?? []).filter((s: any) => s.status === 'active' && !s.paid_at).length
+  const enProceso = enProcesoQuery.count ?? 0
 
   /* ── Share state + role ── */
   const PULSO_DASHBOARD_ID = 'e3af77ce-ac39-475d-b040-8626b17f3598'
@@ -446,16 +454,16 @@ export default async function PulsoPage({
         <div className="relative bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl p-5 flex flex-col">
           <InfoTooltip corner text={`El taller cobró ${fmtMoney(m.ingresos)}. De ese total, ${fmtMoney(m.costoPartes)} se fueron en refacciones. Lo que sobra — ${fmtMoney(m.ingresos - m.costoPartes)} — representa el ${margenBruto.toFixed(1)}% del ingreso total.`} />
           <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">Margen bruto</p>
-          <p className="text-3xl font-semibold" style={{ color: margenBruto > 35 ? '#16a34a' : '#dc2626' }}>
+          <p className="text-3xl font-semibold" style={{ color: margenBruto > GROSS_MARGIN_TARGET ? '#16a34a' : '#dc2626' }}>
             {margenBruto.toFixed(1)}%
           </p>
-          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">Objetivo &gt;35%</p>
+          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">Objetivo &gt;{GROSS_MARGIN_TARGET}%</p>
           <div className="mt-3 w-full bg-gray-100 dark:bg-[var(--taller-progress-bg)] rounded-full h-1">
             <div
               className="h-1 rounded-full transition-all"
               style={{
                 width: `${Math.min(margenBruto, 100)}%`,
-                background: margenBruto > 35 ? '#0070f3' : '#dc2626',
+                background: margenBruto > GROSS_MARGIN_TARGET ? '#0070f3' : '#dc2626',
               }}
             />
           </div>
@@ -471,12 +479,12 @@ export default async function PulsoPage({
           <p className="text-3xl font-semibold" style={{ color: roiBadgeColor(roiMO) }}>
             {roiMO.toFixed(1)}x
           </p>
-          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">Objetivo &gt;2x</p>
+          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">Objetivo &gt;{ROI_EXCELLENT}x</p>
           <div className="mt-3 w-full bg-gray-100 dark:bg-[var(--taller-progress-bg)] rounded-full h-1">
             <div
               className="h-1 rounded-full transition-all"
               style={{
-                width: `${Math.min((roiMO / 3) * 100, 100)}%`,
+                width: `${Math.min((roiMO / ROI_MO_SCALE) * 100, 100)}%`,
                 background: roiBadgeColor(roiMO),
               }}
             />
@@ -506,14 +514,14 @@ export default async function PulsoPage({
 
         {/* Col 5: Servicios en proceso */}
         <div className="relative bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl p-5 flex flex-col">
-          <InfoTooltip corner text="Estos son servicios con status activo que aún no han sido cobrados. Representan trabajo vivo en el taller en este momento." />
+          <InfoTooltip corner text="Servicios en la etapa 'en progreso'. Representan trabajo que se está realizando activamente en el taller." />
           <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">En proceso ahora</p>
           <p className="text-3xl font-semibold" style={{ color: enProceso > 0 ? '#16a34a' : '#9ca3af' }}>
             {enProceso}
           </p>
-          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">servicios activos sin cobrar</p>
+          <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] mt-1">servicios en progreso</p>
           <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-3">
-            Trabajo vivo en el taller en este momento.
+            Trabajo que se está realizando activamente en el taller.
           </p>
         </div>
       </div>
@@ -619,11 +627,11 @@ export default async function PulsoPage({
               borderColor: staleCount > 0 ? 'var(--warning-border)' : 'var(--success-border)',
             }}
           >
-            <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">Servicios activos +3 días</p>
+            <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">Servicios activos +{STALE_SERVICE_DAYS} días</p>
             <p className="text-2xl font-semibold" style={{ color: staleCount > 0 ? '#d97706' : '#16a34a' }}>
               {staleCount}
             </p>
-            <p className="text-xs text-gray-500 dark:text-[var(--taller-muted)] mt-1">Llevan más de 72hrs abiertos</p>
+            <p className="text-xs text-gray-500 dark:text-[var(--taller-muted)] mt-1">Llevan más de {STALE_SERVICE_DAYS * 24}hrs abiertos</p>
             <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-2">
               ¿Falta una refacción? ¿O se puede cerrar hoy?
             </p>
@@ -637,7 +645,7 @@ export default async function PulsoPage({
               borderColor: lowRoiMecs.length > 0 ? 'var(--error-border)' : 'var(--success-border)',
             }}
           >
-            <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">Mecánicos con ROI &lt;1.5x</p>
+            <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-[var(--taller-muted)] mb-2">Mecánicos con ROI &lt;{LOW_MECHANIC_ROI}x</p>
             <p className="text-2xl font-semibold" style={{ color: lowRoiMecs.length > 0 ? '#dc2626' : '#16a34a' }}>
               {lowRoiMecs.length}
             </p>
@@ -805,7 +813,7 @@ export default async function PulsoPage({
           ¿Los costos son estructuralmente sanos?
         </h2>
         <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mb-4">
-          Si los costos superan el 65% de los ingresos, el margen se comprime estructuralmente.
+          Si los costos superan el {TOTAL_COST_TARGET}% de los ingresos, el margen se comprime estructuralmente.
         </p>
 
         <div className="bg-white dark:bg-[var(--taller-surface)] border border-gray-200 dark:border-[var(--taller-border)] rounded-xl overflow-hidden">
@@ -869,19 +877,19 @@ export default async function PulsoPage({
                         className="h-2 rounded-full transition-all"
                         style={{
                           width: `${Math.min(totalCostPct, 100)}%`,
-                          background: costColor(totalCostPct, 65),
+                          background: costColor(totalCostPct, TOTAL_COST_TARGET),
                         }}
                       />
                     </div>
                   </td>
                   <td
                     className="px-4 py-3 text-xs text-right font-bold border-t-2 border-gray-300 dark:border-[var(--taller-border)]"
-                    style={{ color: costColor(totalCostPct, 65) }}
+                    style={{ color: costColor(totalCostPct, TOTAL_COST_TARGET) }}
                   >
                     {totalCostPct.toFixed(1)}%
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-400 dark:text-[var(--taller-muted)] text-right border-t-2 border-gray-300 dark:border-[var(--taller-border)]">
-                    &lt;65%
+                    &lt;{TOTAL_COST_TARGET}%
                   </td>
                 </tr>
               </tbody>
@@ -1016,7 +1024,7 @@ export default async function PulsoPage({
         </div>
 
         <p className="text-xs text-gray-400 dark:text-[var(--taller-muted)] italic mt-3">
-          ROI = MO generada ÷ costo total. Un mecánico con ROI &lt;1.5x necesita más servicios o menor costo.
+          ROI = MO generada ÷ costo total. Un mecánico con ROI &lt;{LOW_MECHANIC_ROI}x necesita más servicios o menor costo.
         </p>
       </div>
       </div>{/* /pulso-content */}
