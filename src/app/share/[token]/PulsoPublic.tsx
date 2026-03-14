@@ -1,7 +1,7 @@
-import { getTallerData, getTenantClientAdmin } from '@/lib/taller/queries'
-import type { Agg, TallerData } from '@/types/taller'
-import PulsoTendencia from '@/components/taller/charts/PulsoTendencia'
-import { fmtMoney } from '@/components/taller/utils'
+import { getTallerData, getTenantClientAdmin } from '@/app/dashboard/tenants/taller/queries/queries'
+import type { Agg, TallerData } from '@/app/dashboard/tenants/taller/types'
+import PulsoTendencia from '@/app/dashboard/tenants/taller/components/charts/PulsoTendencia'
+import { fmtMoney } from '@/app/dashboard/tenants/taller/components/utils'
 import {
   ROI_EXCELLENT,
   ROI_MO_SCALE,
@@ -12,7 +12,7 @@ import {
   LOW_MECHANIC_ROI,
   roiBadgeColor,
   costColor,
-} from '@/lib/taller/thresholds'
+} from '@/app/dashboard/tenants/taller/queries/thresholds'
 
 /* ── Helpers (same as pulso/page.tsx) ── */
 

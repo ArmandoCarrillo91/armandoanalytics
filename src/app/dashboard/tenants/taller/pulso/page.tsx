@@ -1,13 +1,13 @@
 import { Suspense } from 'react'
-import { getTallerData, getTenantClient } from '@/lib/taller/queries'
-import type { Agg, TallerData } from '@/types/taller'
-import DateRangePicker from '@/components/taller/DateRangePicker'
-import PulsoTendencia from '@/components/taller/charts/PulsoTendencia'
-import PulsoShareButton from '@/components/taller/PulsoShareButton'
-import PulsoExportButtons from '@/components/taller/PulsoExportButtons'
-import { fmtMoney } from '@/components/taller/utils'
+import { getTallerData, getTenantClient } from '@/app/dashboard/tenants/taller/queries/queries'
+import type { Agg, TallerData } from '@/app/dashboard/tenants/taller/types'
+import DateRangePicker from '@/app/dashboard/tenants/taller/components/DateRangePicker'
+import PulsoTendencia from '@/app/dashboard/tenants/taller/components/charts/PulsoTendencia'
+import PulsoShareButton from '@/app/dashboard/tenants/taller/components/PulsoShareButton'
+import PulsoExportButtons from '@/app/dashboard/tenants/taller/components/PulsoExportButtons'
+import { fmtMoney } from '@/app/dashboard/tenants/taller/components/utils'
 import { getUserTenantRole } from '@/app/actions/dashboards'
-import InfoTooltip from '@/components/taller/InfoTooltip'
+import InfoTooltip from '@/app/dashboard/tenants/taller/components/InfoTooltip'
 import {
   ROI_EXCELLENT,
   ROI_MO_SCALE,
@@ -18,7 +18,7 @@ import {
   LOW_MECHANIC_ROI,
   roiBadgeColor,
   costColor,
-} from '@/lib/taller/thresholds'
+} from '@/app/dashboard/tenants/taller/queries/thresholds'
 
 const VALID_AGG = new Set<Agg>(['dia', 'semana', 'mes', 'anio'])
 

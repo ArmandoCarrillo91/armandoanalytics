@@ -11,7 +11,7 @@ import type {
   MecanicoEquipo,
   ServicioPendiente,
   GastoCategoria,
-} from '@/types/taller'
+} from '@/app/dashboard/tenants/taller/types'
 
 /* ── Tenant DB connection ── */
 
