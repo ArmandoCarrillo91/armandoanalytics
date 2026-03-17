@@ -81,6 +81,35 @@
   --shadow-modal: 0 8px 30px rgba(0,0,0,0.5);
 }
 
+/* Fallback: apply dark vars before JS loads if OS prefers dark */
+@media (prefers-color-scheme: dark) {
+  html:not(.light) {
+    --logo-rect-fill: rgba(255,255,255,0.03);
+    --logo-rect-stroke: rgba(255,255,255,0.08);
+    --logo-text-fill: rgba(255,255,255,0.95);
+    --bg-light: #0C0C0C;
+    --bg-canvas: #111111;
+    --bg-hover: rgba(255,255,255,0.06);
+    --bg-elevated: #1a1a1a;
+    --bg-inset: rgba(255,255,255,0.05);
+    --border-light: rgba(255,255,255,0.10);
+    --text-black: rgba(255,255,255,0.95);
+    --text-gray: rgba(255,255,255,0.60);
+    --text-muted: rgba(255,255,255,0.35);
+    --hero-bg: #1e1e1e;
+    --success-bg: rgba(16, 185, 129, 0.10);
+    --success-fg: #6ee7b7;
+    --success-border: rgba(16, 185, 129, 0.20);
+    --error-bg: rgba(239, 68, 68, 0.10);
+    --error-fg: #fca5a5;
+    --error-border: rgba(239, 68, 68, 0.20);
+    --warning-bg: rgba(245, 158, 11, 0.10);
+    --warning-border: rgba(245, 158, 11, 0.20);
+    --shadow-popover: 0 4px 12px rgba(0,0,0,0.4);
+    --shadow-modal: 0 8px 30px rgba(0,0,0,0.5);
+  }
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
