@@ -1,250 +1,208 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { toggleDashboardShare } from '@/app/actions/dashboards'
+import { useState, useEffect } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
 
-interface SharePopoverProps {
-  dashboardId: string
+interface Props {
+  dashboardSlug: string
+  tenantId: string
+  tenantName: string
   dashboardName: string
-  isPublic: boolean
-  publicToken: string | null
-  expiresAt: string | null
-  onUpdate: (isPublic: boolean, token: string | null, expiresAt: string | null) => void
 }
 
-function formatExpiry(iso: string): string {
-  const d = new Date(iso)
-  const day = d.getDate()
-  const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-  const month = months[d.getMonth()]
-  const hours = d.getHours()
-  const minutes = d.getMinutes().toString().padStart(2, '0')
-  const ampm = hours >= 12 ? 'PM' : 'AM'
-  const h12 = hours % 12 || 12
-  return `Expira el ${day} ${month} a las ${h12}:${minutes} ${ampm}`
-}
+const BASE_URL = 'https://aa.mx'
 
-export default function SharePopover({
-  dashboardId,
-  dashboardName,
-  isPublic,
-  publicToken,
-  expiresAt,
-  onUpdate,
-}: SharePopoverProps) {
+export default function SharePopover({ dashboardSlug, tenantId, tenantName, dashboardName }: Props) {
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [token, setToken] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [showQR, setShowQR] = useState(false)
+  const [viewCount, setViewCount] = useState(0)
+  const [createdAt, setCreatedAt] = useState<string | null>(null)
+
+  // Personal invite state
+  const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
+  const [expiresIn, setExpiresIn] = useState('168')
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    if (open) document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    if (!open) return
+    fetchPublicLink()
   }, [open])
 
-  async function handleToggle() {
-    setLoading(true)
-    try {
-      const result = await toggleDashboardShare(
-        dashboardId,
-        isPublic ? 'disable' : 'enable'
-      )
-      onUpdate(result.is_public, result.public_token, result.public_token_expires_at)
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setLoading(false)
+  async function fetchPublicLink() {
+    const res = await fetch('/api/share/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenantId, dashboardSlug, type: 'public' }),
+    })
+    const data = await res.json()
+    if (data.token) {
+      setToken(data.token)
+      setViewCount(data.viewCount ?? 0)
+      setCreatedAt(data.createdAt ?? null)
     }
   }
 
-  async function handleRenew() {
-    setLoading(true)
-    try {
-      const result = await toggleDashboardShare(dashboardId, 'renew')
-      onUpdate(result.is_public, result.public_token, result.public_token_expires_at)
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const shareUrl = token ? `${BASE_URL}/share/${token}` : ''
 
-  const shareUrl = publicToken
-    ? `${window.location.origin}/share/${publicToken}`
-    : ''
-
-  async function handleCopy() {
-    await navigator.clipboard.writeText(shareUrl)
+  function handleCopy() {
+    navigator.clipboard.writeText(shareUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
+  async function handlePersonalLink() {
+    setGenerating(true)
+    const res = await fetch('/api/share/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tenantId, dashboardSlug, type: 'personal',
+        recipientEmail: email, recipientName: name,
+        expiresIn: expiresIn === 'null' ? null : Number(expiresIn),
+      }),
+    })
+    const data = await res.json()
+    if (data.token) {
+      navigator.clipboard.writeText(`${BASE_URL}/share/${data.token}`)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+      setEmail('')
+      setName('')
+    }
+    setGenerating(false)
+  }
+
+  function timeAgo(dateStr: string) {
+    const diff = Date.now() - new Date(dateStr).getTime()
+    const h = Math.floor(diff / 3600000)
+    if (h < 1) return 'hace menos de 1h'
+    if (h < 24) return `hace ${h}h`
+    return `hace ${Math.floor(h / 24)}d`
+  }
+
+  const inp: React.CSSProperties = {
+    width: '100%', padding: '8px 10px', fontSize: 13, borderRadius: 8,
+    border: '1px solid var(--border-light)', background: 'var(--bg-light)',
+    color: 'var(--text-black)', boxSizing: 'border-box',
+  }
+
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          setOpen(!open)
-        }}
-        style={{
-          padding: '4px 10px',
-          fontSize: '12px',
-          background: 'transparent',
-          border: '1px solid var(--border-light)',
-          borderRadius: '4px',
-          color: 'var(--text-gray)',
-          cursor: 'pointer',
-        }}
-      >
-        Compartir
+    <div style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(!open)} style={{
+        padding: '6px 12px', fontSize: 13, fontWeight: 500, borderRadius: 8,
+        border: '1px solid var(--border-light)', background: 'var(--bg-light)',
+        color: 'var(--text-black)', cursor: 'pointer', display: 'flex',
+        alignItems: 'center', gap: 6,
+      }}>
+        <ShareIcon /> Compartir
       </button>
 
       {open && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            position: 'absolute',
-            top: '100%',
-            right: 0,
-            marginTop: '4px',
-            width: '320px',
-            background: 'var(--bg-elevated)',
+        <>
+          <div onClick={() => { setOpen(false); setShowQR(false) }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)', zIndex: 90 }} />
+
+          <div style={{
+            position: 'absolute', top: 40, right: 0, width: 340, zIndex: 91,
+            background: 'var(--bg-light)', borderRadius: 12,
             border: '1px solid var(--border-light)',
-            borderRadius: '8px',
-            boxShadow: 'var(--shadow-popover)',
-            padding: '16px',
-            zIndex: 50,
-          }}
-        >
-          <div
-            style={{
-              fontSize: '13px',
-              fontWeight: 600,
-              marginBottom: '12px',
-              color: 'var(--text-black)',
-            }}
-          >
-            Compartir &ldquo;{dashboardName}&rdquo;
-          </div>
-
-          {/* Toggle */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '12px',
-            }}
-          >
-            <span style={{ fontSize: '12px', color: 'var(--text-gray)' }}>
-              Link p&uacute;blico
-            </span>
-            <button
-              onClick={handleToggle}
-              disabled={loading}
-              style={{
-                width: '40px',
-                height: '22px',
-                borderRadius: '11px',
-                border: 'none',
-                background: isPublic ? '#10B981' : 'var(--text-muted)',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                position: 'relative',
-                transition: 'background 0.2s',
-              }}
-            >
-              <div
-                style={{
-                  width: '18px',
-                  height: '18px',
-                  borderRadius: '50%',
-                  background: 'white',
-                  position: 'absolute',
-                  top: '2px',
-                  left: isPublic ? '20px' : '2px',
-                  transition: 'left 0.2s',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                }}
-              />
-            </button>
-          </div>
-
-          {/* Link display */}
-          {isPublic && publicToken && (
-            <div>
-              <div
-                style={{
-                  padding: '8px 10px',
-                  background: 'var(--bg-inset)',
-                  border: '1px solid var(--border-light)',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  color: 'var(--text-gray)',
-                  wordBreak: 'break-all',
-                  marginBottom: '8px',
-                }}
-              >
-                {shareUrl}
-              </div>
-
-              {/* Expiration info */}
-              {expiresAt && (
-                <div
-                  style={{
-                    fontSize: '11px',
-                    color: new Date(expiresAt) < new Date() ? '#EF4444' : 'var(--text-gray)',
-                    marginBottom: '8px',
-                  }}
-                >
-                  {new Date(expiresAt) < new Date()
-                    ? 'Link expirado'
-                    : formatExpiry(expiresAt)}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <button
-                  onClick={handleCopy}
-                  style={{
-                    flex: 1,
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    background: 'var(--text-black)',
-                    color: 'var(--bg-light)',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {copied ? 'Copiado!' : 'Copiar link'}
-                </button>
-                <button
-                  onClick={handleRenew}
-                  disabled={loading}
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    background: 'transparent',
-                    color: 'var(--text-black)',
-                    border: '1px solid var(--border-light)',
-                    borderRadius: '6px',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  Renovar 24h
-                </button>
-              </div>
+            boxShadow: '0 4px 24px rgba(0,0,0,0.12)', padding: 16,
+          }}>
+            {/* SECTION 1 — Active link */}
+            <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-gray)', margin: '0 0 8px' }}>
+              Link público
+            </p>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input readOnly value={shareUrl} onFocus={(e) => e.target.select()} style={{
+                flex: 1, padding: '7px 10px', fontSize: 12, borderRadius: 8,
+                border: '1px solid var(--border-light)', background: 'var(--bg-hover)',
+                color: 'var(--text-black)', boxSizing: 'border-box',
+              }} />
+              <button onClick={handleCopy} style={{
+                padding: '7px 12px', fontSize: 12, fontWeight: 500, borderRadius: 8,
+                border: 'none', background: 'var(--accent)', color: '#fff',
+                cursor: 'pointer', minWidth: 64,
+              }}>
+                {copied ? '✓ Copiado' : 'Copiar'}
+              </button>
             </div>
-          )}
-        </div>
+            <ShareGrid shareUrl={shareUrl} dashboardName={dashboardName}
+              showQR={showQR} setShowQR={setShowQR} />
+            {showQR && token && (
+              <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center' }}>
+                <QRCodeSVG value={shareUrl} size={140} />
+              </div>
+            )}
+
+            <div style={{ borderTop: '1px solid var(--border-light)', margin: '14px 0' }} />
+
+            {/* SECTION 2 — Personal invite */}
+            <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-gray)', margin: '0 0 8px' }}>
+              Invitación personal
+            </p>
+            <input placeholder="Email del destinatario" value={email}
+              onChange={(e) => setEmail(e.target.value)} style={{ ...inp, marginBottom: 8 }} />
+            <input placeholder="Nombre (opcional)" value={name}
+              onChange={(e) => setName(e.target.value)} style={{ ...inp, marginBottom: 8 }} />
+            <select value={expiresIn} onChange={(e) => setExpiresIn(e.target.value)}
+              style={{ ...inp, marginBottom: 10 }}>
+              <option value="24">24 horas</option>
+              <option value="168">7 días</option>
+              <option value="720">30 días</option>
+              <option value="null">Sin expiración</option>
+            </select>
+            <button onClick={handlePersonalLink} disabled={!email || generating} style={{
+              width: '100%', padding: '8px 0', fontSize: 13, fontWeight: 500, borderRadius: 8,
+              border: 'none', background: !email ? 'var(--bg-hover)' : 'var(--accent)',
+              color: !email ? 'var(--text-muted)' : '#fff',
+              cursor: email ? 'pointer' : 'default',
+            }}>
+              {generating ? 'Generando...' : 'Generar link personal'}
+            </button>
+
+            <div style={{ borderTop: '1px solid var(--border-light)', margin: '14px 0' }} />
+
+            {/* SECTION 3 — Footer */}
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              {viewCount} visitas{createdAt ? ` · creado ${timeAgo(createdAt)}` : ''}
+            </span>
+          </div>
+        </>
       )}
     </div>
+  )
+}
+
+function ShareGrid({ shareUrl, dashboardName, showQR, setShowQR }: any) {
+  const wa = `https://wa.me/?text=${encodeURIComponent(`${dashboardName}: ${shareUrl}`)}`
+  const mail = `mailto:?subject=${encodeURIComponent(dashboardName)}&body=${encodeURIComponent(shareUrl)}`
+  const btn: React.CSSProperties = {
+    padding: '8px 0', fontSize: 12, fontWeight: 500, borderRadius: 8,
+    border: '1px solid var(--border-light)', background: 'var(--bg-light)',
+    color: 'var(--text-black)', cursor: 'pointer',
+  }
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
+      <button style={btn} onClick={() => window.open(wa, '_blank')}>WhatsApp</button>
+      <button style={btn} onClick={() => window.open(mail)}>Email</button>
+      <button style={btn} onClick={() => setShowQR(!showQR)}>QR</button>
+      <button style={btn} onClick={() => {
+        if (navigator.share) navigator.share({ title: dashboardName, url: shareUrl })
+      }}>Más</button>
+    </div>
+  )
+}
+
+function ShareIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+      <polyline points="16 6 12 2 8 6" />
+      <line x1="12" y1="2" x2="12" y2="15" />
+    </svg>
   )
 }

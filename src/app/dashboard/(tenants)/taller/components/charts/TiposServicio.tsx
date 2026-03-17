@@ -1,6 +1,7 @@
 'use client'
 
-import ReactECharts from 'echarts-for-react'
+import dynamic from 'next/dynamic'
+const ReactECharts = dynamic(() => import('echarts-for-react'), { ssr: false })
 import { PRIMARY, WARNING, NEUTRAL, FONT } from '../chartColors'
 import { fmtAxisCount } from '../utils'
 import { useChartResize } from '../useChartResize'
@@ -13,7 +14,7 @@ interface Props {
 const PALETTE = [PRIMARY, WARNING, NEUTRAL, '#3b82f6']
 
 export default function TiposServicio({ data }: Props) {
-  const { containerRef, chartRef } = useChartResize()
+  const { containerRef, onChartReady } = useChartResize()
   const { ink, border } = useChartColors()
   const sorted = [...data].sort((a, b) => a.cantidad - b.cantidad)
 
@@ -53,7 +54,7 @@ export default function TiposServicio({ data }: Props) {
 
   return (
     <div ref={containerRef} className="w-full aspect-[5/2]">
-      <ReactECharts ref={chartRef} option={option} style={{ width: '100%', height: '100%' }} />
+      <ReactECharts onChartReady={onChartReady} option={option} style={{ width: '100%', height: '100%' }} />
     </div>
   )
 }

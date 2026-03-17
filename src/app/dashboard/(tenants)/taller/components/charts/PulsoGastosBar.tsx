@@ -1,6 +1,7 @@
 'use client'
 
-import ReactECharts from 'echarts-for-react'
+import dynamic from 'next/dynamic'
+const ReactECharts = dynamic(() => import('echarts-for-react'), { ssr: false })
 import { FONT } from '../chartColors'
 import { fmtMoney } from '../utils'
 import { useChartResize } from '../useChartResize'
@@ -11,7 +12,7 @@ interface Props {
 }
 
 export default function PulsoGastosBar({ data }: Props) {
-  const { containerRef, chartRef } = useChartResize()
+  const { containerRef, onChartReady } = useChartResize()
   const { ink, border } = useChartColors()
 
   const option = {
@@ -60,7 +61,7 @@ export default function PulsoGastosBar({ data }: Props) {
 
   return (
     <div ref={containerRef} className="w-full" style={{ height: 153 }}>
-      <ReactECharts ref={chartRef} option={option} notMerge style={{ width: '100%', height: '100%' }} />
+      <ReactECharts onChartReady={onChartReady} option={option} notMerge style={{ width: '100%', height: '100%' }} />
     </div>
   )
 }

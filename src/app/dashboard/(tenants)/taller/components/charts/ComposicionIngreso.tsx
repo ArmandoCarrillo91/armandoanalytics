@@ -1,6 +1,7 @@
 'use client'
 
-import ReactECharts from 'echarts-for-react'
+import dynamic from 'next/dynamic'
+const ReactECharts = dynamic(() => import('echarts-for-react'), { ssr: false })
 import { PRIMARY, NEUTRAL, FONT } from '../chartColors'
 import { fmtMoney } from '../utils'
 import { useChartResize } from '../useChartResize'
@@ -12,7 +13,7 @@ interface Props {
 }
 
 export default function ComposicionIngreso({ mo, partes }: Props) {
-  const { containerRef, chartRef } = useChartResize()
+  const { containerRef, onChartReady } = useChartResize()
   const { ink, border } = useChartColors()
   const option = {
     tooltip: {
@@ -45,7 +46,7 @@ export default function ComposicionIngreso({ mo, partes }: Props) {
 
   return (
     <div ref={containerRef} className="w-full aspect-[4/3]">
-      <ReactECharts ref={chartRef} option={option} style={{ width: '100%', height: '100%' }} />
+      <ReactECharts onChartReady={onChartReady} option={option} style={{ width: '100%', height: '100%' }} />
     </div>
   )
 }

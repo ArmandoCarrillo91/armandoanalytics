@@ -1,6 +1,7 @@
 'use client'
 
-import ReactECharts from 'echarts-for-react'
+import dynamic from 'next/dynamic'
+const ReactECharts = dynamic(() => import('echarts-for-react'), { ssr: false })
 import { FONT } from '../chartColors'
 import { fmtMoney, fmtAxis } from '../utils'
 import { useChartResize } from '../useChartResize'
@@ -12,7 +13,7 @@ interface Props {
 }
 
 export default function PulsoTendencia({ data, hideLegend }: Props) {
-  const { containerRef, chartRef } = useChartResize()
+  const { containerRef, onChartReady } = useChartResize()
   const { ink, muted, border } = useChartColors()
   const allNegative = data.length > 0 && data.every(d => d.flujo < 0)
 
@@ -106,7 +107,7 @@ export default function PulsoTendencia({ data, hideLegend }: Props) {
 
   return (
     <div ref={containerRef} className="w-full aspect-[16/7]">
-      <ReactECharts ref={chartRef} option={option} notMerge style={{ width: '100%', height: '100%' }} />
+      <ReactECharts onChartReady={onChartReady} option={option} notMerge style={{ width: '100%', height: '100%' }} />
     </div>
   )
 }

@@ -1,21 +1,23 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
-import type ReactECharts from 'echarts-for-react'
+import { useRef, useCallback } from 'react'
+import type { ECharts } from 'echarts'
 
 export function useChartResize() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const chartRef = useRef<ReactECharts>(null)
+  const observerRef = useRef<ResizeObserver | null>(null)
 
-  useEffect(() => {
+  const onChartReady = useCallback((instance: ECharts) => {
     const el = containerRef.current
-    const instance = chartRef.current?.getEchartsInstance()
-    if (!el || !instance) return
+    if (!el) return
+
+    // Clean up previous observer if any
+    observerRef.current?.disconnect()
 
     const observer = new ResizeObserver(() => instance.resize())
     observer.observe(el)
-    return () => observer.disconnect()
+    observerRef.current = observer
   }, [])
 
-  return { containerRef, chartRef }
+  return { containerRef, onChartReady }
 }

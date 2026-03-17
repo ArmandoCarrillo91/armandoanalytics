@@ -10,9 +10,10 @@ const workspaceNames: Record<string, string> = {
 
 function TopBarContent() {
   const pathname = usePathname()
+  const isAdmin = pathname.startsWith('/dashboard/admin')
   const segments = pathname.split('/')
   const slug = segments[2] ?? ''
-  const name = workspaceNames[slug] ?? slug
+  const name = isAdmin ? '' : (workspaceNames[slug] ?? slug)
 
   return (
     <div

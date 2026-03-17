@@ -1,6 +1,7 @@
 'use client'
 
-import ReactECharts from 'echarts-for-react'
+import dynamic from 'next/dynamic'
+const ReactECharts = dynamic(() => import('echarts-for-react'), { ssr: false })
 import { NEUTRAL, WARNING, FONT } from '../chartColors'
 import { fmtMoney, fmtAxis } from '../utils'
 import { useChartResize } from '../useChartResize'
@@ -11,7 +12,7 @@ interface Props {
 }
 
 export default function SalarioComisionMecanico({ data }: Props) {
-  const { containerRef, chartRef } = useChartResize()
+  const { containerRef, onChartReady } = useChartResize()
   const { ink, border } = useChartColors()
   const sorted = [...data].sort((a, b) => (a.salario + a.comision) - (b.salario + b.comision))
 
@@ -69,7 +70,7 @@ export default function SalarioComisionMecanico({ data }: Props) {
 
   return (
     <div ref={containerRef} className="w-full aspect-[5/2]">
-      <ReactECharts ref={chartRef} option={option} style={{ width: '100%', height: '100%' }} />
+      <ReactECharts onChartReady={onChartReady} option={option} style={{ width: '100%', height: '100%' }} />
     </div>
   )
 }

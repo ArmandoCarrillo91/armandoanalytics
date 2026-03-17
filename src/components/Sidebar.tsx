@@ -1,10 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import InviteUserModal from '@/components/InviteUserModal'
 import ThemeToggle from '@/components/ThemeToggle'
 
 interface Tenant {
@@ -12,11 +10,9 @@ interface Tenant {
   name: string
 }
 
-export default function Sidebar({ tenants, email, isPlatformAdmin }: { tenants: Tenant[]; email: string; isPlatformAdmin?: boolean }) {
+export default function Sidebar({ tenants, email, platformRole }: { tenants: Tenant[]; email: string; platformRole: string }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [showInvite, setShowInvite] = useState(false)
-
   async function handleLogout() {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -108,35 +104,55 @@ export default function Sidebar({ tenants, email, isPlatformAdmin }: { tenants: 
         })}
       </nav>
 
-      {/* Invite button (admin only) */}
-      {isPlatformAdmin && (
-        <div style={{ padding: '0 16px 8px' }}>
-          <button
-            onClick={() => setShowInvite(true)}
+      {/* Admin nav (owner and viewer) */}
+      {(platformRole === 'owner' || platformRole === 'viewer') && (
+        <nav style={{ paddingBottom: 8 }}>
+          <div
             style={{
-              width: '100%',
-              padding: '7px 0',
-              fontSize: 12,
+              padding: '0 16px',
+              marginBottom: 6,
+              fontSize: 10,
               fontWeight: 500,
-              borderRadius: 8,
-              border: '1px dashed var(--border-light)',
-              background: 'transparent',
-              color: 'var(--text-gray)',
-              cursor: 'pointer',
-              transition: 'background 0.15s, color 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--bg-hover)'
-              e.currentTarget.style.color = 'var(--text-black)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.color = 'var(--text-gray)'
+              color: 'var(--text-muted)',
+              letterSpacing: '1.5px',
+              textTransform: 'uppercase' as const,
             }}
           >
-            + Invitar usuario
-          </button>
-        </div>
+            Admin
+          </div>
+          {([
+            { href: '/dashboard/admin/tenants', label: 'Tenants', ownerOnly: true },
+            { href: '/dashboard/admin/usuarios', label: 'Usuarios', ownerOnly: false },
+            { href: '/dashboard/admin/configuracion', label: 'Configuración', ownerOnly: true },
+          ] as const).filter((item) => !item.ownerOnly || platformRole === 'owner').map(({ href, label }) => {
+            const active = pathname.startsWith(href)
+            return (
+              <Link
+                key={href}
+                href={href}
+                style={{
+                  display: 'block',
+                  padding: '8px 16px',
+                  fontSize: 13,
+                  fontWeight: active ? 500 : 400,
+                  color: active ? 'var(--text-black)' : 'var(--text-gray)',
+                  background: active ? 'var(--bg-hover)' : 'transparent',
+                  borderLeft: `2px solid ${active ? 'var(--accent)' : 'transparent'}`,
+                  textDecoration: 'none',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!active) e.currentTarget.style.background = 'var(--bg-hover)'
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) e.currentTarget.style.background = 'transparent'
+                }}
+              >
+                {label}
+              </Link>
+            )
+          })}
+        </nav>
       )}
 
       {/* Footer */}
@@ -205,7 +221,6 @@ export default function Sidebar({ tenants, email, isPlatformAdmin }: { tenants: 
           </svg>
         </button>
       </div>
-      {showInvite && <InviteUserModal onClose={() => setShowInvite(false)} tenantSlug={pathname.split('/')[2]} />}
     </aside>
   )
 }

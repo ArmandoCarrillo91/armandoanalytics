@@ -1,6 +1,7 @@
 'use client'
 
-import ReactECharts from 'echarts-for-react'
+import dynamic from 'next/dynamic'
+const ReactECharts = dynamic(() => import('echarts-for-react'), { ssr: false })
 import { PRIMARY, NEGATIVE, WARNING, NEUTRAL, FONT } from '../chartColors'
 import { fmtMoney } from '../utils'
 import { useChartResize } from '../useChartResize'
@@ -13,7 +14,7 @@ interface Props {
 const PALETTE = [NEGATIVE, WARNING, PRIMARY, NEUTRAL, '#c4b5a0']
 
 export default function GastosCategoria({ data }: Props) {
-  const { containerRef, chartRef } = useChartResize()
+  const { containerRef, onChartReady } = useChartResize()
   const { ink, border } = useChartColors()
   const total = data.reduce((s, d) => s + d.total, 0)
 
@@ -62,7 +63,7 @@ export default function GastosCategoria({ data }: Props) {
 
   return (
     <div ref={containerRef} className="w-full aspect-[5/2]">
-      <ReactECharts ref={chartRef} option={option} notMerge={true} style={{ width: '100%', height: '100%' }} />
+      <ReactECharts onChartReady={onChartReady} option={option} notMerge={true} style={{ width: '100%', height: '100%' }} />
     </div>
   )
 }

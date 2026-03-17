@@ -1,6 +1,7 @@
 'use client'
 
-import ReactECharts from 'echarts-for-react'
+import dynamic from 'next/dynamic'
+const ReactECharts = dynamic(() => import('echarts-for-react'), { ssr: false })
 import { PRIMARY, WARNING, NEGATIVE, FONT } from '../chartColors'
 import { useChartResize } from '../useChartResize'
 import { useChartColors } from '../useChartColors'
@@ -16,7 +17,7 @@ function margenColor(pct: number) {
 }
 
 export default function MargenRefacciones({ data }: Props) {
-  const { containerRef, chartRef } = useChartResize()
+  const { containerRef, onChartReady } = useChartResize()
   const { ink, border } = useChartColors()
   const sorted = [...data]
   const margins = sorted.map((d) => {
@@ -78,7 +79,7 @@ export default function MargenRefacciones({ data }: Props) {
 
   return (
     <div ref={containerRef} className="w-full aspect-[5/2]">
-      <ReactECharts ref={chartRef} option={option} style={{ width: '100%', height: '100%' }} />
+      <ReactECharts onChartReady={onChartReady} option={option} style={{ width: '100%', height: '100%' }} />
     </div>
   )
 }

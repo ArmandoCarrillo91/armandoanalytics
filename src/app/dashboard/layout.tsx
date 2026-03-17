@@ -30,7 +30,7 @@ export default async function DashboardLayout({
       .eq('tenant.is_active', true),
     supabaseAdmin
       .from('users')
-      .select('is_platform_admin')
+      .select('is_platform_admin, platform_role')
       .eq('id', user.id)
       .single(),
   ])
@@ -40,11 +40,11 @@ export default async function DashboardLayout({
     name: r.tenant.name as string,
   }))
 
-  const isPlatformAdmin = profile?.is_platform_admin === true
+  const platformRole = (profile?.platform_role as string) ?? 'none'
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-light)' }}>
-      <Sidebar tenants={tenants} email={user.email ?? ''} isPlatformAdmin={isPlatformAdmin} />
+      <Sidebar tenants={tenants} email={user.email ?? ''} platformRole={platformRole} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <TopBar />
         <main
