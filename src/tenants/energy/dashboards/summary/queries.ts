@@ -112,3 +112,141 @@ export async function getTicketPromedio() {
   `)
   return rows
 }
+
+export async function getIngresosAcumuladosAnio() {
+  const { rows } = await pool.query(`
+    SELECT
+      EXTRACT(MONTH FROM created_at)::int as mes,
+      SUM(SUM(price)) OVER (ORDER BY EXTRACT(MONTH FROM created_at)) as acumulado
+    FROM client_packages
+    WHERE EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM NOW())
+      AND published_at IS NOT NULL
+    GROUP BY EXTRACT(MONTH FROM created_at)
+    ORDER BY mes
+  `)
+  return rows
+}
+
+export async function getIngresosAcumuladosAnioAnterior() {
+  const { rows } = await pool.query(`
+    SELECT
+      EXTRACT(MONTH FROM created_at)::int as mes,
+      SUM(SUM(price)) OVER (ORDER BY EXTRACT(MONTH FROM created_at)) as acumulado
+    FROM client_packages
+    WHERE EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM NOW()) - 1
+      AND published_at IS NOT NULL
+    GROUP BY EXTRACT(MONTH FROM created_at)
+    ORDER BY mes
+  `)
+  return rows
+}
+
+export async function getHorasAcumuladasAnio() {
+  const { rows } = await pool.query(`
+    SELECT
+      EXTRACT(MONTH FROM class_date)::int as mes,
+      ROUND((SUM(COUNT(*)) OVER (ORDER BY EXTRACT(MONTH FROM class_date)) * 0.75)::numeric) as horas_acumuladas
+    FROM class_reservations
+    WHERE EXTRACT(YEAR FROM class_date) = EXTRACT(YEAR FROM NOW())
+      AND (is_refunded = false OR is_refunded IS NULL)
+    GROUP BY EXTRACT(MONTH FROM class_date)
+    ORDER BY mes
+  `)
+  return rows
+}
+
+/* ── Queries for new Energy dashboard ── */
+
+export async function getIngresosAcumuladosMesAnterior() {
+  const { rows } = await pool.query(`
+    SELECT
+      DATE_PART('day', created_at)::int as dia,
+      SUM(SUM(price)) OVER (ORDER BY DATE_PART('day', created_at)) as acumulado
+    FROM client_packages
+    WHERE EXTRACT(MONTH FROM created_at) = EXTRACT(MONTH FROM NOW())
+      AND EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM NOW()) - 1
+      AND published_at IS NOT NULL
+    GROUP BY DATE_PART('day', created_at)
+    ORDER BY dia
+  `)
+  return rows
+}
+
+export async function getHorasAcumuladasMes() {
+  const { rows } = await pool.query(`
+    SELECT
+      DATE_PART('day', class_date)::int as dia,
+      ROUND((SUM(COUNT(*)) OVER (ORDER BY DATE_PART('day', class_date)) * 0.75)::numeric) as horas
+    FROM class_reservations
+    WHERE DATE_TRUNC('month', class_date) = DATE_TRUNC('month', NOW())
+      AND (is_refunded = false OR is_refunded IS NULL)
+    GROUP BY DATE_PART('day', class_date)
+    ORDER BY dia
+  `)
+  return rows
+}
+
+export async function getOcupacionSemanal() {
+  const { rows } = await pool.query(`
+    SELECT
+      cr.class_date,
+      COUNT(cr.id)::int as spots_ocupados,
+      (SELECT COUNT(*)::int FROM bikes WHERE enabled = true) as spots_total,
+      ROUND(COUNT(cr.id) * 100.0 /
+        NULLIF((SELECT COUNT(*) FROM bikes WHERE enabled = true), 0), 0)::int as pct
+    FROM class_reservations cr
+    WHERE cr.class_date >= DATE_TRUNC('week', CURRENT_DATE)
+      AND cr.class_date < DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days'
+      AND cr.reservation_status = 'reserved'
+      AND (cr.is_refunded = false OR cr.is_refunded IS NULL)
+    GROUP BY cr.class_date
+    ORDER BY cr.class_date
+  `)
+  return rows
+}
+
+export async function getChurnRisk() {
+  try {
+    const { rows } = await pool.query(`
+      SELECT COUNT(*)::int as count FROM client_packages
+      WHERE expires_at BETWEEN NOW() AND NOW() + INTERVAL '7 days'
+        AND remaining_classes > 0
+        AND published_at IS NOT NULL
+    `)
+    return rows[0]?.count ?? 0
+  } catch {
+    return 0
+  }
+}
+
+export async function getClasesBajaOcupacionManana() {
+  try {
+    const { rows } = await pool.query(`
+      SELECT COUNT(*)::int as count FROM (
+        SELECT cr.class_date
+        FROM class_reservations cr
+        WHERE cr.class_date::date = CURRENT_DATE + 1
+          AND cr.reservation_status = 'reserved'
+          AND (cr.is_refunded = false OR cr.is_refunded IS NULL)
+        GROUP BY cr.class_date
+        HAVING COUNT(cr.id) < (SELECT COUNT(*) FROM bikes WHERE enabled = true) * 0.5
+      ) sub
+    `)
+    return rows[0]?.count ?? 0
+  } catch {
+    return 0
+  }
+}
+
+export async function getListosRenovar() {
+  try {
+    const { rows } = await pool.query(`
+      SELECT COUNT(*)::int as count FROM client_packages
+      WHERE created_at BETWEEN NOW() - INTERVAL '35 days' AND NOW() - INTERVAL '25 days'
+        AND published_at IS NOT NULL
+    `)
+    return rows[0]?.count ?? 0
+  } catch {
+    return 0
+  }
+}
