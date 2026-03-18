@@ -10,6 +10,7 @@ import {
   getChurnRisk,
   getClasesBajaOcupacionManana,
   getListosRenovar,
+  getOcupacionHeatmap,
 } from '@/tenants/energy/dashboards/summary/queries'
 import EnergyShell from '@/tenants/energy/dashboards/summary/EnergyShell'
 import SharePopover from '@/components/SharePopover'
@@ -29,6 +30,7 @@ export default async function EnergyPage() {
     churnRisk,
     clasesBajas,
     listosRenovar,
+    ocupacionHeatmap,
   ] = await Promise.all([
     supabase.from('tenants').select('id').eq('slug', 'energy').single(),
     getOcupacionHoy(),
@@ -41,6 +43,7 @@ export default async function EnergyPage() {
     getChurnRisk(),
     getClasesBajaOcupacionManana(),
     getListosRenovar(),
+    getOcupacionHeatmap(),
   ])
 
   return (
@@ -66,6 +69,7 @@ export default async function EnergyPage() {
         clasesBajas={clasesBajas}
         listosRenovar={listosRenovar}
         heatmap={heatmap}
+        ocupacionHeatmap={ocupacionHeatmap}
       />
     </div>
   )

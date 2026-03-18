@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import dynamic from 'next/dynamic'
 
 const ReactECharts = dynamic(() => import('echarts-for-react'), { ssr: false })
+import OcupacionHeatmap from './OcupacionHeatmap'
 
 /* ── Types ── */
 type OcupacionRow = {
@@ -16,6 +17,7 @@ type IngresoRow = { dia: number; acumulado: number; diario?: number }
 type HorasRow = { dia: number; horas: number }
 type KPIs = { ingresos: number; clases: number; paquetes: number; ticket: number }
 type HeatmapRow = { class_date: string; spots_ocupados: number; spots_total: number; pct: number }
+type OcupacionHeatmapRow = { day_label: string; time_slot: string; avg_occupancy: number }
 
 type Props = {
   ocupacion: OcupacionRow[]
@@ -28,6 +30,7 @@ type Props = {
   clasesBajas: number
   listosRenovar: number
   heatmap: HeatmapRow[]
+  ocupacionHeatmap: OcupacionHeatmapRow[]
 }
 
 /* ── Palette ── */
@@ -81,6 +84,7 @@ export default function EnergyShell({
   ocupacion, kpis, totalBicis,
   ingresosAcumulados, ingresosAnterior, horasMes,
   churnRisk, clasesBajas, listosRenovar, heatmap,
+  ocupacionHeatmap,
 }: Props) {
   const numClases = ocupacion.length
   const totalSpots = ocupacion.reduce((s, r) => s + Number(r.spots_ocupados), 0)
@@ -347,7 +351,10 @@ export default function EnergyShell({
         </div>
       </div>
 
-      {/* ── ROW 4 — Chart + Lectura ── */}
+      {/* ── ROW 4 — Ocupación Heatmap ── */}
+      <OcupacionHeatmap data={ocupacionHeatmap} />
+
+      {/* ── ROW 5 — Chart + Lectura ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 12 }}>
         {/* Chart ingresos */}
         <div style={card}>

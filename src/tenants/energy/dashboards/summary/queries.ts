@@ -238,6 +238,43 @@ export async function getClasesBajaOcupacionManana() {
   }
 }
 
+export async function getOcupacionHeatmap() {
+  const { rows } = await pool.query(`
+    WITH clases AS (
+      SELECT
+        cr.class_date,
+        EXTRACT(DOW FROM cr.class_date) AS dow,
+        TO_CHAR(cr.class_date, 'HH24:MI') AS time_slot,
+        COUNT(cr.id) AS spots_ocupados,
+        (SELECT COUNT(*) FROM bikes WHERE enabled = true) AS spots_total
+      FROM class_reservations cr
+      WHERE cr.reservation_status = 'reserved'
+        AND (cr.is_refunded = false OR cr.is_refunded IS NULL)
+        AND cr.class_date >= NOW() - INTERVAL '8 weeks'
+      GROUP BY cr.class_date
+    )
+    SELECT
+      CASE dow
+        WHEN 1 THEN 'Lun'
+        WHEN 2 THEN 'Mar'
+        WHEN 3 THEN 'Mié'
+        WHEN 4 THEN 'Jue'
+        WHEN 5 THEN 'Vie'
+        WHEN 6 THEN 'Sáb'
+        WHEN 0 THEN 'Dom'
+      END AS day_label,
+      time_slot,
+      ROUND(AVG(spots_ocupados * 100.0 / NULLIF(spots_total, 0))::numeric, 0)::int AS avg_occupancy
+    FROM clases
+    GROUP BY dow, time_slot
+    ORDER BY
+      CASE dow WHEN 1 THEN 1 WHEN 2 THEN 2 WHEN 3 THEN 3 WHEN 4 THEN 4
+               WHEN 5 THEN 5 WHEN 6 THEN 6 WHEN 0 THEN 7 END,
+      time_slot
+  `)
+  return rows as { day_label: string; time_slot: string; avg_occupancy: number }[]
+}
+
 export async function getListosRenovar() {
   try {
     const { rows } = await pool.query(`
