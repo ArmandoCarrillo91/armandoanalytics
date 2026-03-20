@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { getTenantClientCached } from '@/lib/tenant-client'
+
 
 export async function POST(req: NextRequest) {
   const { sql, tenantSlug } = await req.json()
@@ -52,7 +54,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 3. Ejecutar SQL contra la BD del tenant
-  const tenantDb = createClient(tenant.db_url, tenant.db_anon_key)
+  const tenantDb = getTenantClientCached(tenantSlug, tenant.db_url, tenant.db_anon_key)
   const { data, error } = await tenantDb.rpc('execute_query', { query: sql })
 
   if (error) {
