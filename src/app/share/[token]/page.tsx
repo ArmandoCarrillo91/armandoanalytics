@@ -2,8 +2,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import PublicDashboard from './PublicDashboard'
 import PulsoPublic from './PulsoPublic'
 import ShareDurationTracker from './ShareDurationTracker'
-import { getClasesAnioPublic } from '@/tenants/energy/dashboards/summary/queriesPublic'
-import ClasesAnio from '@/tenants/energy/dashboards/summary/charts/clases-anio/ClasesAnio'
 
 const SENSITIVE_WORDS = ['nómina', 'nomina', 'cuentas', 'salario', 'sueldo', 'payroll']
 
@@ -63,18 +61,6 @@ async function renderShareLink(
     .single()
 
   const tenantName = tenant?.name ?? 'Dashboard'
-
-  // Render energy summary dashboard
-  if (link.dashboard_slug === 'summary') {
-    const clasesData = await getClasesAnioPublic()
-    return (
-      <div style={{ background: 'var(--bg-canvas)', minHeight: '100vh', padding: '2rem' }}>
-        <ClasesAnio data={clasesData} />
-        <ShareDurationTracker token={token} />
-        <Watermark tenantName={tenantName} />
-      </div>
-    )
-  }
 
   return <div style={centered}>
     <p style={{ fontSize: 16, color: 'var(--text-gray)', fontWeight: 500 }}>

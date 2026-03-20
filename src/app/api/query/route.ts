@@ -10,7 +10,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing sql or tenantSlug' }, { status: 400 })
   }
 
-  // Get tenant credentials from armandoanalytics DB
   const cookieStore = await cookies()
   const aa = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,17 +26,32 @@ export async function POST(req: NextRequest) {
     }
   )
 
-  const { data: tenant } = await aa
-    .from('tenants')
-    .select('db_url, db_anon_key')
-    .eq('slug', tenantSlug)
-    .single()
-
-  if (!tenant?.db_url || !tenant?.db_anon_key) {
-    return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
+  // 1. Verificar que hay sesión activa
+  const { data: { user }, error: authError } = await aa.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Execute SQL against tenant DB using rpc
+  // 2. Verificar que el usuario pertenece al tenant que está solicitando
+  const { data: membership } = await aa
+    .from('tenant_users')
+    .select('role, tenant:tenants!inner(id, slug, db_url, db_anon_key, is_active)')
+    .eq('user_id', user.id)
+    .eq('tenant.slug', tenantSlug)
+    .eq('tenant.is_active', true)
+    .single()
+
+  if (!membership) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const tenant = membership.tenant as any
+
+  if (!tenant?.db_url || !tenant?.db_anon_key) {
+    return NextResponse.json({ error: 'Tenant not configured' }, { status: 400 })
+  }
+
+  // 3. Ejecutar SQL contra la BD del tenant
   const tenantDb = createClient(tenant.db_url, tenant.db_anon_key)
   const { data, error } = await tenantDb.rpc('execute_query', { query: sql })
 

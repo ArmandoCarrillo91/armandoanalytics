@@ -3,14 +3,8 @@ import {
   getOcupacionHoy,
   getIngresosAcumulados,
   getKPIsMes,
-  getTotalBicis,
-  getIngresosAcumuladosMesAnterior,
-  getHorasAcumuladasMes,
-  getOcupacionSemanal,
-  getChurnRisk,
-  getClasesBajaOcupacionManana,
-  getListosRenovar,
-  getOcupacionHeatmap,
+  getTendencia,
+  getTicketPromedio,
 } from '@/tenants/energy/dashboards/summary/queries'
 import EnergyShell from '@/tenants/energy/dashboards/summary/EnergyShell'
 import SharePopover from '@/components/SharePopover'
@@ -23,53 +17,38 @@ export default async function EnergyPage() {
     ocupacion,
     ingresosAcumulados,
     kpis,
-    totalBicis,
-    ingresosAnterior,
-    horasMes,
-    heatmap,
-    churnRisk,
-    clasesBajas,
-    listosRenovar,
-    ocupacionHeatmap,
+    tendencia,
+    ticketPromedio,
   ] = await Promise.all([
     supabase.from('tenants').select('id').eq('slug', 'energy').single(),
     getOcupacionHoy(),
     getIngresosAcumulados(),
     getKPIsMes(),
-    getTotalBicis(),
-    getIngresosAcumuladosMesAnterior(),
-    getHorasAcumuladasMes(),
-    getOcupacionSemanal(),
-    getChurnRisk(),
-    getClasesBajaOcupacionManana(),
-    getListosRenovar(),
-    getOcupacionHeatmap(),
+    getTendencia(),
+    getTicketPromedio(),
   ])
 
   return (
-    <div style={{ padding: '20px 24px', background: '#0F0F0F', minHeight: '100vh' }}>
-      {tenant && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+    <div style={{ padding: '2rem', background: '#111', minHeight: '100vh' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: '#F0EEE8' }}>
+          Energy Cycle Studio
+        </h1>
+        {tenant && (
           <SharePopover
             dashboardSlug="summary"
             tenantId={tenant.id}
             tenantName="Energy Cycle Studio"
             dashboardName="Summary"
           />
-        </div>
-      )}
+        )}
+      </div>
       <EnergyShell
         ocupacion={ocupacion}
-        kpis={kpis}
-        totalBicis={totalBicis}
         ingresosAcumulados={ingresosAcumulados}
-        ingresosAnterior={ingresosAnterior}
-        horasMes={horasMes}
-        churnRisk={churnRisk}
-        clasesBajas={clasesBajas}
-        listosRenovar={listosRenovar}
-        heatmap={heatmap}
-        ocupacionHeatmap={ocupacionHeatmap}
+        kpis={kpis}
+        tendencia={tendencia}
+        ticketPromedio={ticketPromedio}
       />
     </div>
   )
