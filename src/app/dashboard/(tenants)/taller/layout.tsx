@@ -10,7 +10,7 @@ export default async function TallerLayout({
   children: React.ReactNode
 }) {
   /* Auth check — mirrors parent layout as extra safety layer */
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 

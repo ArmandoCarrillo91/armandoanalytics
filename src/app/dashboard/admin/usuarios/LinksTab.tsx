@@ -26,7 +26,7 @@ export default function LinksTab({ platformRole, tenantId }: { platformRole: str
 
   async function fetchLinks() {
     setLoading(true)
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data } = await supabase
       .from('share_links')
       .select('id, dashboard_slug, type, recipient_email, recipient_name, expires_at, view_count, last_viewed_at, created_at')

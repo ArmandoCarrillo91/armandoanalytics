@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import TenantsView from './TenantsView'
 
 export default async function TenantsPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')

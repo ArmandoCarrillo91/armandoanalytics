@@ -51,7 +51,7 @@ export default function PulsoExportButtons({ data, canInterpret = false }: Props
     if (!canInterpret) return
     let cancelled = false
     async function fetchUsage() {
-      const supabase = createClient()
+      const supabase = await createClient()
       const { data: usageData } = await supabase
         .from('usage_limits')
         .select('count, updated_at')

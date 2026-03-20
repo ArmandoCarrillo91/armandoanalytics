@@ -8,7 +8,7 @@ export default async function UsuariosPage({
   searchParams: Promise<{ tenant?: string }>
 }) {
   const params = await searchParams
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   const supabaseAdmin = createAdminClient(

@@ -21,7 +21,7 @@ export default function InviteUserModal({ onClose, tenantSlug }: { onClose: () =
 
   useEffect(() => {
     async function fetchTenants() {
-      const supabase = createClient()
+      const supabase = await createClient()
       const { data } = await supabase
         .from('tenants')
         .select('id, name, slug')

@@ -19,7 +19,7 @@ export default function TallerSidebar({ onNavigate, otherTenants = [], isPlatfor
   const [showInvite, setShowInvite] = useState(false)
 
   async function handleLogout() {
-    const supabase = createClient()
+    const supabase = await createClient()
     await supabase.auth.signOut()
     router.push('/login')
   }

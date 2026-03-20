@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
   try {
     // 1. Verificar autenticación
     console.log('[interpret] Paso 1: Verificando autenticación...')
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       console.log('[interpret] ERROR: No autenticado')

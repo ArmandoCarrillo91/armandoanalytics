@@ -10,7 +10,7 @@ import EnergyShell from '@/tenants/energy/dashboards/summary/EnergyShell'
 import SharePopover from '@/components/SharePopover'
 
 export default async function EnergyPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const [
     { data: tenant },

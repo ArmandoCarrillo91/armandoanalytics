@@ -14,7 +14,7 @@ export default function Sidebar({ tenants, email, platformRole }: { tenants: Ten
   const pathname = usePathname()
   const router = useRouter()
   async function handleLogout() {
-    const supabase = createClient()
+    const supabase = await createClient()
     await supabase.auth.signOut()
     router.push('/login')
   }
